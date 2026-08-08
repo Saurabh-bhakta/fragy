@@ -3,7 +3,11 @@
  * In development, Vite proxies /api → http://localhost:5000
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+let rawBase = (import.meta.env.VITE_API_URL || '/api').trim().replace(/\/+$/, '');
+if (rawBase !== '/api' && !rawBase.endsWith('/api')) {
+  rawBase = `${rawBase}/api`;
+}
+const API_BASE = rawBase;
 
 function getToken() {
   return localStorage.getItem('noteshub_token');

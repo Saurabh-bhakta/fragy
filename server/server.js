@@ -26,14 +26,18 @@ async function start() {
   await connectDB();
 
   // Security & parsing middleware
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
   app.use(
     cors({
-      origin: CLIENT_URL,
+      origin: (origin, callback) => callback(null, true), // Allow all origins for dev & deployed clients
       credentials: true,
     })
   );
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '5mb' }));
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
   // Health check
@@ -43,9 +47,9 @@ async function start() {
 
   // API routes
   app.use('/api/auth', authRoutes);
-  app.use('/api', contentRoutes);
-  app.use('/api/comments', commentRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/comments', commentRoutes);
+  app.use('/api', contentRoutes);
 
   // 404 for unknown API paths
   app.use('/api', (req, res) => {
