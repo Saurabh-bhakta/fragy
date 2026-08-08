@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
-const TABS = ['overview', 'content', 'about', 'users'];
+const TABS = ['overview', 'content', 'materials', 'about', 'users'];
 
 /**
- * Admin panel — manage content, about & owner details, and view users.
+ * Admin panel — manage content, uploaded materials, owner details, and users.
  */
 function Admin() {
   const [tab, setTab] = useState('overview');
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [semesters, setSemesters] = useState([]);
+  const [resourcesList, setResourcesList] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -46,6 +48,18 @@ function Admin() {
     }
   }
 
+  async function loadResources() {
+    setResourcesLoading(true);
+    try {
+      const data = await api.adminListResources();
+      setResourcesList(data.resources || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load uploaded materials.');
+    } finally {
+      setResourcesLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh();
   }, []);
@@ -53,6 +67,8 @@ function Admin() {
   useEffect(() => {
     if (tab === 'users') {
       api.adminUsers().then((d) => setUsers(d.users || [])).catch((e) => setError(e.message));
+    } else if (tab === 'materials') {
+      loadResources();
     } else if (tab === 'about') {
       setAboutLoading(true);
       api
@@ -104,7 +120,7 @@ function Admin() {
         number: Number(semesterForm.number),
       });
       setSemesterForm({ name: '', number: '', description: '' });
-      setMessage('Semester created.');
+      setMessage('Semester created successfully.');
       refresh();
     } catch (err) {
       setError(err.message);
@@ -118,7 +134,7 @@ function Admin() {
     try {
       await api.adminCreateSubject(subjectForm);
       setSubjectForm({ name: '', code: '', semesterId: subjectForm.semesterId });
-      setMessage('Subject created.');
+      setMessage('Subject created successfully.');
       await loadSubjects(subjectForm.semesterId);
       refresh();
     } catch (err) {
@@ -138,22 +154,28 @@ function Admin() {
         driveUrl: '',
         description: '',
       }));
-      setMessage('Resource added.');
+      setMessage('Resource added successfully!');
       refresh();
+      loadResources();
     } catch (err) {
       setError(err.message);
     }
   }
 
-  async function softRemoveResource() {
-    const id = window.prompt('Enter resource MongoDB id to remove (soft delete):');
-    if (!id) return;
+  async function handleDeleteResource(resourceId, resourceTitle) {
+    if (!window.confirm(`Are you sure you want to delete "${resourceTitle}"?`)) {
+      return;
+    }
+
+    setMessage('');
+    setError('');
     try {
-      await api.adminRemoveResource(id.trim());
-      setMessage('Resource removed.');
+      await api.adminRemoveResource(resourceId);
+      setMessage(`"${resourceTitle}" deleted successfully.`);
+      loadResources();
       refresh();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to delete resource.');
     }
   }
 
@@ -177,7 +199,7 @@ function Admin() {
       <div className="container admin-layout">
         <div>
           <h1>Admin Panel</h1>
-          <p className="muted">Manage platform content, owner details, and users.</p>
+          <p className="muted">Manage content, delete uploaded materials, update owner details & users.</p>
         </div>
 
         <div className="admin-tabs">
@@ -188,7 +210,11 @@ function Admin() {
               className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setTab(t)}
             >
-              {t === 'about' ? 'About & Owner' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'about'
+                ? 'About & Owner'
+                : t === 'materials'
+                ? 'Uploaded Materials (Delete)'
+                : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
@@ -220,11 +246,12 @@ function Admin() {
         {tab === 'content' && (
           <>
             <form className="stack-form form-card" style={{ margin: 0 }} onSubmit={onCreateSemester}>
-              <h2>Add semester</h2>
+              <h2>Add Semester</h2>
               <div className="form-group">
                 <label>Name</label>
                 <input
                   required
+                  placeholder="e.g. Semester 1"
                   value={semesterForm.name}
                   onChange={(e) => setSemesterForm((f) => ({ ...f, name: e.target.value }))}
                 />
@@ -235,6 +262,7 @@ function Admin() {
                   type="number"
                   min={1}
                   required
+                  placeholder="1"
                   value={semesterForm.number}
                   onChange={(e) => setSemesterForm((f) => ({ ...f, number: e.target.value }))}
                 />
@@ -242,17 +270,18 @@ function Admin() {
               <div className="form-group">
                 <label>Description</label>
                 <input
+                  placeholder="Optional description"
                   value={semesterForm.description}
                   onChange={(e) => setSemesterForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
               <button className="btn btn-primary" type="submit">
-                Add semester
+                Add Semester
               </button>
             </form>
 
             <form className="stack-form form-card" style={{ margin: 0 }} onSubmit={onCreateSubject}>
-              <h2>Add subject</h2>
+              <h2>Add Subject</h2>
               <div className="form-group">
                 <label>Semester</label>
                 <select
@@ -276,6 +305,7 @@ function Admin() {
                 <label>Name</label>
                 <input
                   required
+                  placeholder="e.g. Data Structures & Algorithms"
                   value={subjectForm.name}
                   onChange={(e) => setSubjectForm((f) => ({ ...f, name: e.target.value }))}
                 />
@@ -283,17 +313,18 @@ function Admin() {
               <div className="form-group">
                 <label>Code</label>
                 <input
+                  placeholder="e.g. CS201"
                   value={subjectForm.code}
                   onChange={(e) => setSubjectForm((f) => ({ ...f, code: e.target.value }))}
                 />
               </div>
               <button className="btn btn-primary" type="submit">
-                Add subject
+                Add Subject
               </button>
             </form>
 
             <form className="stack-form form-card" style={{ margin: 0 }} onSubmit={onCreateResource}>
-              <h2>Add resource (Drive link)</h2>
+              <h2>Add Material (Drive link)</h2>
               <div className="form-group">
                 <label>Semester (to load subjects)</label>
                 <select onChange={(e) => loadSubjects(e.target.value)} defaultValue="">
@@ -328,21 +359,22 @@ function Admin() {
                   value={resourceForm.type}
                   onChange={(e) => setResourceForm((f) => ({ ...f, type: e.target.value }))}
                 >
-                  <option value="notes">Notes</option>
-                  <option value="slides">Slides</option>
-                  <option value="pyqs">PYQs</option>
+                  <option value="notes">Notes 📄</option>
+                  <option value="slides">Slides 📊</option>
+                  <option value="pyqs">PYQs ❓</option>
                 </select>
               </div>
               <div className="form-group">
                 <label>Title</label>
                 <input
                   required
+                  placeholder="e.g. Unit 1 Complete Notes"
                   value={resourceForm.title}
                   onChange={(e) => setResourceForm((f) => ({ ...f, title: e.target.value }))}
                 />
               </div>
               <div className="form-group">
-                <label>Google Drive URL</label>
+                <label>Google Drive Link</label>
                 <input
                   required
                   type="url"
@@ -354,6 +386,7 @@ function Admin() {
               <div className="form-group">
                 <label>Description</label>
                 <input
+                  placeholder="Optional notes description"
                   value={resourceForm.description}
                   onChange={(e) =>
                     setResourceForm((f) => ({ ...f, description: e.target.value }))
@@ -361,13 +394,82 @@ function Admin() {
                 />
               </div>
               <button className="btn btn-primary" type="submit">
-                Add resource
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={softRemoveResource}>
-                Remove resource by ID
+                Upload Material
               </button>
             </form>
           </>
+        )}
+
+        {tab === 'materials' && (
+          <div className="form-card" style={{ maxWidth: '100%' }}>
+            <h2>Uploaded Study Materials ({resourcesList.length})</h2>
+            <p className="muted">Click Delete next to any material to permanently remove it from the platform.</p>
+
+            {resourcesLoading ? (
+              <p className="muted">Loading materials…</p>
+            ) : resourcesList.length === 0 ? (
+              <p className="muted">No study materials uploaded yet.</p>
+            ) : (
+              <div className="table-wrap" style={{ marginTop: '1rem' }}>
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Type</th>
+                      <th>Subject</th>
+                      <th>Drive Link</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resourcesList.map((r) => (
+                      <tr key={r._id}>
+                        <td>
+                          <strong>{r.title}</strong>
+                          {r.description && <div className="muted" style={{ fontSize: '0.85rem' }}>{r.description}</div>}
+                        </td>
+                        <td>
+                          <span className="badge" style={{ textTransform: 'capitalize' }}>
+                            {r.type === 'notes' ? '📄 Notes' : r.type === 'slides' ? '📊 Slides' : '❓ PYQs'}
+                          </span>
+                        </td>
+                        <td>
+                          {r.subjectId?.name ? `${r.subjectId.name} (${r.subjectId.code || ''})` : 'Unknown Subject'}
+                        </td>
+                        <td>
+                          <a
+                            href={r.driveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '0.88rem', wordBreak: 'break-all' }}
+                          >
+                            Open Link ↗
+                          </a>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              borderColor: '#fca5a5',
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                            }}
+                            onClick={() => handleDeleteResource(r._id, r.title)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
 
         {tab === 'about' && (

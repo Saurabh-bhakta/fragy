@@ -136,17 +136,32 @@ async function updateResource(req, res) {
   }
 }
 
-/** DELETE /api/admin/resources/:id — soft delete (sets isActive false) */
+/** GET /api/admin/resources — list all uploaded materials */
+async function listResources(req, res) {
+  try {
+    const resources = await Resource.find({ isActive: true })
+      .populate({
+        path: 'subjectId',
+        select: 'name code semesterId',
+        populate: { path: 'semesterId', select: 'name number' },
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+    return res.json({ resources });
+  } catch (err) {
+    console.error('listResources error:', err);
+    return res.status(500).json({ message: 'Failed to list resources.' });
+  }
+}
+
+/** DELETE /api/admin/resources/:id — delete resource */
 async function removeResource(req, res) {
   try {
-    const resource = await Resource.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const resource = await Resource.findByIdAndDelete(req.params.id);
     if (!resource) return res.status(404).json({ message: 'Resource not found.' });
-    return res.json({ message: 'Resource removed.', resource });
+    return res.json({ message: 'Resource deleted successfully.', resource });
   } catch (err) {
+    console.error('removeResource error:', err);
     return res.status(500).json({ message: 'Failed to remove resource.' });
   }
 }
@@ -172,6 +187,7 @@ module.exports = {
   updateSemester,
   createSubject,
   updateSubject,
+  listResources,
   createResource,
   updateResource,
   removeResource,

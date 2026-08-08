@@ -38,6 +38,7 @@ router.post(
 );
 router.patch('/subjects/:id', admin.updateSubject);
 
+router.get('/resources', admin.listResources);
 router.post(
   '/resources',
   [

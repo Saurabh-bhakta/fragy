@@ -75,6 +75,7 @@ export const api = {
     request('/admin/subjects', { method: 'POST', body, auth: true }),
   adminUpdateSubject: (id, body) =>
     request(`/admin/subjects/${id}`, { method: 'PATCH', body, auth: true }),
+  adminListResources: () => request('/admin/resources', { auth: true }),
   adminCreateResource: (body) =>
     request('/admin/resources', { method: 'POST', body, auth: true }),
   adminUpdateResource: (id, body) =>
