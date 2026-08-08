@@ -67,6 +67,21 @@ function Home() {
               <SemesterCard key={semester.id} semester={semester} />
             ))}
           </div>
+
+          {/* Message from Owner section */}
+          <div className="owner-message-card">
+            <div className="owner-message-header">
+              <span className="owner-message-icon" aria-hidden="true">📢</span>
+              <h3 className="owner-message-title">Message from Owner</h3>
+            </div>
+            <div className="owner-message-content">
+              <p>The content gets updated on weekly basis,</p>
+              <p>
+                If you want to share any type of content which would contribute please refer to{' '}
+                <Link to="/about" className="owner-message-link">about section</Link> and contact me . Thank you
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -1451,6 +1451,65 @@ table.data th {
   letter-spacing: 0.5px;
 }
 
+/* Message from Owner section */
+.owner-message-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-md, 12px);
+  padding: 1.75rem 2rem;
+  margin-top: 2.5rem;
+  position: relative;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03);
+}
+
+.owner-message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.owner-message-icon {
+  font-size: 1.5rem;
+  background: #eef2ff;
+  padding: 0.4rem 0.6rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.owner-message-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.owner-message-content {
+  color: var(--color-ink);
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.owner-message-content p {
+  margin-bottom: 0.5rem;
+}
+
+.owner-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.owner-message-link {
+  color: var(--color-primary, #4f46e5);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.owner-message-link:hover {
+  text-decoration: none;
+}
+
 
 
 
