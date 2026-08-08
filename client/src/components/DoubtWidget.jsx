@@ -119,29 +119,40 @@ export function DoubtWidget() {
             <p className="doubt-select-label">Select an AI to open & ask:</p>
 
             <div className="doubt-ai-list">
-              {aiOptions.map((ai) => (
-                <button
-                  key={ai.id}
-                  type="button"
-                  className="doubt-ai-btn"
-                  onClick={() => handleAiRedirect(ai)}
-                  style={{ '--ai-color': ai.color, '--ai-bg': ai.bgLight }}
-                >
-                  <span className="doubt-ai-icon" aria-hidden="true">
-                    {ai.icon}
-                  </span>
-                  <div className="doubt-ai-meta">
-                    <div className="doubt-ai-name-row">
-                      <strong className="doubt-ai-name">{ai.name}</strong>
-                      <span className="doubt-ai-provider">{ai.provider}</span>
+              {aiOptions.map((ai) => {
+                const url = ai.getUrl(query.trim());
+                return (
+                  <a
+                    key={ai.id}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="doubt-ai-btn"
+                    onClick={() => {
+                      if (query.trim() && navigator.clipboard) {
+                        navigator.clipboard.writeText(query.trim()).catch(() => {});
+                        setCopiedMsg(`Query copied! Redirecting to ${ai.name}...`);
+                        setTimeout(() => setCopiedMsg(''), 3000);
+                      }
+                    }}
+                    style={{ '--ai-color': ai.color, '--ai-bg': ai.bgLight, textDecoration: 'none' }}
+                  >
+                    <span className="doubt-ai-icon" aria-hidden="true">
+                      {ai.icon}
+                    </span>
+                    <div className="doubt-ai-meta">
+                      <div className="doubt-ai-name-row">
+                        <strong className="doubt-ai-name">{ai.name}</strong>
+                        <span className="doubt-ai-provider">{ai.provider}</span>
+                      </div>
+                      <span className="doubt-ai-desc">{ai.desc}</span>
                     </div>
-                    <span className="doubt-ai-desc">{ai.desc}</span>
-                  </div>
-                  <span className="doubt-ai-arrow" aria-hidden="true">
-                    ↗
-                  </span>
-                </button>
-              ))}
+                    <span className="doubt-ai-arrow" aria-hidden="true">
+                      ↗
+                    </span>
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>
