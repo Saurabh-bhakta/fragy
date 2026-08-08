@@ -1,0 +1,14 @@
+{
+  "name": "noteshub",
+  "private": true,
+  "version": "1.0.0",
+  "description": "NotesHub — semester-wise study materials platform",
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "mongo": "bash scripts/start-mongo.sh",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "seed": "npm run seed --prefix server",
+    "build": "npm run build --prefix client"
+  }
+}

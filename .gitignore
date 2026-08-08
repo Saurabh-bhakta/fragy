@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.vite/
+
+# Local MongoDB binaries / data (portable install)
+.tools/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs & OS
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.log
+
+# Editor
+.idea/
+.vscode/
+*.swp
