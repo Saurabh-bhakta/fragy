@@ -4,6 +4,7 @@ const validate = require('../middleware/validate');
 const { protect, authorize } = require('../middleware/auth');
 const admin = require('../controllers/adminController');
 const { adminGetAbout, adminUpdateAbout } = require('../controllers/aboutController');
+const { adminListComments, adminDeleteComment } = require('../controllers/commentController');
 
 const router = express.Router();
 
@@ -15,6 +16,9 @@ router.get('/users', admin.listUsers);
 
 router.get('/about', adminGetAbout);
 router.put('/about', adminUpdateAbout);
+
+router.get('/comments', adminListComments);
+router.delete('/comments/:id', adminDeleteComment);
 
 router.post(
   '/semesters',

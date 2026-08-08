@@ -5,6 +5,7 @@ import { api } from '../services/api';
 
 /**
  * Comments page — allows students to share their thoughts and feedback about Fragy.
+ * Users can edit their own comment within 5 minutes of posting.
  */
 export function Comments() {
   const { isAuthenticated, user } = useAuth();
@@ -16,6 +17,13 @@ export function Comments() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Editing state
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [now, setNow] = useState(Date.now());
 
   const fetchComments = async () => {
     try {
@@ -31,6 +39,12 @@ export function Comments() {
 
   useEffect(() => {
     fetchComments();
+  }, []);
+
+  // Update `now` timestamp every 10s to keep 5-minute countdown timers accurate
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -52,7 +66,6 @@ export function Comments() {
       const res = await api.postComment(message.trim());
       setSuccess('Thank you! Your thought has been posted.');
       setMessage('');
-      // Add newly created comment to the list top
       if (res.comment) {
         setComments((prev) => [res.comment, ...prev]);
       } else {
@@ -62,6 +75,45 @@ export function Comments() {
       setError(err.message || 'Failed to post comment.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStartEdit = (comment) => {
+    setEditingId(comment.id || comment._id);
+    setEditText(comment.message);
+    setEditError('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+    setEditError('');
+  };
+
+  const handleSaveEdit = async (commentId) => {
+    if (!editText.trim() || editText.trim().length < 2) {
+      setEditError('Comment must be at least 2 characters.');
+      return;
+    }
+    if (editText.trim().length > 500) {
+      setEditError('Comment must be under 500 characters.');
+      return;
+    }
+
+    setEditSubmitting(true);
+    setEditError('');
+    try {
+      const res = await api.updateComment(commentId, editText.trim());
+      setComments((prev) =>
+        prev.map((c) => ((c.id || c._id) === commentId ? { ...c, ...res.comment } : c))
+      );
+      setEditingId(null);
+      setSuccess('Comment updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setEditError(err.message || 'Failed to update comment.');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -153,6 +205,7 @@ export function Comments() {
           ) : (
             <div className="comments-list">
               {comments.map((comment) => {
+                const commentId = comment.id || comment._id;
                 const initial = (comment.authorName || '?').charAt(0).toUpperCase();
                 const dateStr = comment.createdAt
                   ? new Date(comment.createdAt).toLocaleDateString(undefined, {
@@ -162,16 +215,81 @@ export function Comments() {
                     })
                   : '';
 
+                // Calculate 5-minute edit window availability
+                const FIVE_MINS = 5 * 60 * 1000;
+                const isOwner =
+                  user &&
+                  (String(comment.userId) === String(user.id) ||
+                    String(comment.userId) === String(user._id));
+                const createdAtMs = comment.createdAt ? new Date(comment.createdAt).getTime() : 0;
+                const timePassed = now - createdAtMs;
+                const canEdit = isOwner && timePassed < FIVE_MINS;
+                const remainingMs = Math.max(0, FIVE_MINS - timePassed);
+                const minsLeft = Math.floor(remainingMs / (60 * 1000));
+                const secsLeft = Math.floor((remainingMs % (60 * 1000)) / 1000);
+
+                const isEditingThis = editingId === commentId;
+
                 return (
-                  <article key={comment.id || comment._id} className="comment-card fade-up">
-                    <div className="comment-header">
-                      <div className="comment-author-avatar">{initial}</div>
-                      <div className="comment-author-meta">
-                        <strong className="comment-author-name">{comment.authorName}</strong>
-                        {dateStr && <span className="comment-date">{dateStr}</span>}
+                  <article key={commentId} className="comment-card fade-up">
+                    <div className="comment-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div className="comment-author-avatar">{initial}</div>
+                        <div className="comment-author-meta">
+                          <strong className="comment-author-name">{comment.authorName}</strong>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {dateStr && <span className="comment-date">{dateStr}</span>}
+                            {comment.isEdited && <span className="muted" style={{ fontSize: '0.8rem' }}>(edited)</span>}
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Show edit button if current user created comment within 5 mins */}
+                      {canEdit && !isEditingThis && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.82rem', padding: '0.25rem 0.6rem' }}
+                          onClick={() => handleStartEdit(comment)}
+                          title={`Can edit for ${minsLeft}m ${secsLeft}s`}
+                        >
+                          ✏️ Edit ({minsLeft}m {secsLeft}s left)
+                        </button>
+                      )}
                     </div>
-                    <p className="comment-message">{comment.message}</p>
+
+                    {isEditingThis ? (
+                      <div className="comment-edit-box" style={{ marginTop: '0.85rem' }}>
+                        {editError && <div className="alert alert-error">{editError}</div>}
+                        <textarea
+                          rows={3}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          maxLength={500}
+                          style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            disabled={editSubmitting || !editText.trim()}
+                            onClick={() => handleSaveEdit(commentId)}
+                          >
+                            {editSubmitting ? 'Saving…' : 'Save Changes'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={handleCancelEdit}
+                            disabled={editSubmitting}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="comment-message">{comment.message}</p>
+                    )}
                   </article>
                 );
               })}

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
-const TABS = ['overview', 'content', 'materials', 'about', 'users'];
+const TABS = ['overview', 'content', 'materials', 'comments', 'about', 'users'];
 
 /**
- * Admin panel — manage content, uploaded materials, owner details, and users.
+ * Admin panel — manage content, uploaded materials, student comments, owner details, and users.
  */
 function Admin() {
   const [tab, setTab] = useState('overview');
@@ -13,6 +13,8 @@ function Admin() {
   const [semesters, setSemesters] = useState([]);
   const [resourcesList, setResourcesList] = useState([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [commentsList, setCommentsList] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -60,6 +62,18 @@ function Admin() {
     }
   }
 
+  async function loadAdminComments() {
+    setCommentsLoading(true);
+    try {
+      const data = await api.adminListComments();
+      setCommentsList(data.comments || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load comments.');
+    } finally {
+      setCommentsLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh();
   }, []);
@@ -69,6 +83,8 @@ function Admin() {
       api.adminUsers().then((d) => setUsers(d.users || [])).catch((e) => setError(e.message));
     } else if (tab === 'materials') {
       loadResources();
+    } else if (tab === 'comments') {
+      loadAdminComments();
     } else if (tab === 'about') {
       setAboutLoading(true);
       api
@@ -179,6 +195,22 @@ function Admin() {
     }
   }
 
+  async function handleDeleteComment(commentId, authorName) {
+    if (!window.confirm(`Are you sure you want to delete this comment by ${authorName}?`)) {
+      return;
+    }
+
+    setMessage('');
+    setError('');
+    try {
+      await api.adminDeleteComment(commentId);
+      setMessage(`Comment by ${authorName} deleted successfully.`);
+      loadAdminComments();
+    } catch (err) {
+      setError(err.message || 'Failed to delete comment.');
+    }
+  }
+
   async function onSaveAbout(e) {
     e.preventDefault();
     setMessage('');
@@ -199,7 +231,7 @@ function Admin() {
       <div className="container admin-layout">
         <div>
           <h1>Admin Panel</h1>
-          <p className="muted">Manage content, delete uploaded materials, update owner details & users.</p>
+          <p className="muted">Manage content, delete uploaded materials, moderate comments, update owner details & users.</p>
         </div>
 
         <div className="admin-tabs">
@@ -213,7 +245,9 @@ function Admin() {
               {t === 'about'
                 ? 'About & Owner'
                 : t === 'materials'
-                ? 'Uploaded Materials (Delete)'
+                ? 'Uploaded Materials'
+                : t === 'comments'
+                ? 'Comments Manager'
                 : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
@@ -459,6 +493,65 @@ function Admin() {
                               fontWeight: '600',
                             }}
                             onClick={() => handleDeleteResource(r._id, r.title)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'comments' && (
+          <div className="form-card" style={{ maxWidth: '100%' }}>
+            <h2>Student Comments Manager ({commentsList.length})</h2>
+            <p className="muted">Review student feedback and delete spam or inappropriate comments.</p>
+
+            {commentsLoading ? (
+              <p className="muted">Loading comments…</p>
+            ) : commentsList.length === 0 ? (
+              <p className="muted">No comments posted yet.</p>
+            ) : (
+              <div className="table-wrap" style={{ marginTop: '1rem' }}>
+                <table className="data">
+                  <thead>
+                    <tr>
+                      <th>Author</th>
+                      <th>Message</th>
+                      <th>Posted On</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {commentsList.map((c) => (
+                      <tr key={c.id || c._id}>
+                        <td>
+                          <strong>{c.authorName}</strong>
+                          {c.isEdited && <span className="muted" style={{ fontSize: '0.78rem', display: 'block' }}>(edited)</span>}
+                        </td>
+                        <td style={{ maxWidth: '360px', wordBreak: 'break-word' }}>
+                          {c.message}
+                        </td>
+                        <td>
+                          {c.createdAt ? new Date(c.createdAt).toLocaleString() : 'N/A'}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              borderColor: '#fca5a5',
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                            }}
+                            onClick={() => handleDeleteComment(c.id || c._id, c.authorName)}
                           >
                             🗑️ Delete
                           </button>

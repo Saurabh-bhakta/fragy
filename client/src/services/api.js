@@ -65,6 +65,8 @@ export const api = {
   getComments: () => request('/comments'),
   postComment: (message) =>
     request('/comments', { method: 'POST', body: { message }, auth: true }),
+  updateComment: (id, message) =>
+    request(`/comments/${id}`, { method: 'PUT', body: { message }, auth: true }),
   getAbout: () => request('/about'),
   adminGetAbout: () => request('/admin/about', { auth: true }),
   adminUpdateAbout: (body) =>
@@ -86,4 +88,6 @@ export const api = {
     request(`/admin/resources/${id}`, { method: 'PATCH', body, auth: true }),
   adminRemoveResource: (id) =>
     request(`/admin/resources/${id}`, { method: 'DELETE', auth: true }),
+  adminListComments: () => request('/admin/comments', { auth: true }),
+  adminDeleteComment: (id) => request(`/admin/comments/${id}`, { method: 'DELETE', auth: true }),
 };

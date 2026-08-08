@@ -3,7 +3,7 @@ const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const { protect } = require('../middleware/auth');
-const { listComments, createComment } = require('../controllers/commentController');
+const { listComments, createComment, updateComment } = require('../controllers/commentController');
 
 const router = express.Router();
 
@@ -31,6 +31,20 @@ router.post(
   ],
   validate,
   createComment
+);
+
+// Logged-in users can edit their own comment (within 5 minutes window)
+router.put(
+  '/:id',
+  protect,
+  [
+    body('message')
+      .trim()
+      .isLength({ min: 2, max: 500 })
+      .withMessage('Comment must be between 2 and 500 characters'),
+  ],
+  validate,
+  updateComment
 );
 
 module.exports = router;
