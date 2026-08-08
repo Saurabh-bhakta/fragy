@@ -90,9 +90,13 @@ async function updateSubject(req, res) {
 /** POST /api/admin/resources */
 async function createResource(req, res) {
   try {
-    const { title, type, subjectId, driveUrl, description } = req.body;
+    let { title, type, subjectId, driveUrl, description } = req.body;
     if (!['notes', 'slides', 'pyqs'].includes(type)) {
       return res.status(400).json({ message: 'type must be notes, slides, or pyqs.' });
+    }
+
+    if (driveUrl && !/^https?:\/\//i.test(driveUrl)) {
+      driveUrl = 'https://' + driveUrl;
     }
 
     const subject = await Subject.findById(subjectId);
@@ -107,7 +111,8 @@ async function createResource(req, res) {
     });
     return res.status(201).json({ resource });
   } catch (err) {
-    return res.status(500).json({ message: 'Failed to create resource.' });
+    console.error('createResource error:', err);
+    return res.status(500).json({ message: 'Failed to create resource. ' + (err.message || '') });
   }
 }
 

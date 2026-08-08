@@ -82,6 +82,7 @@ async function adminUpdateAbout(req, res) {
 
     if (typeof aboutIntro === 'string') {
       settings.aboutIntro = aboutIntro.trim().slice(0, 2000);
+      settings.markModified('aboutIntro');
     }
 
     if (owner && typeof owner === 'object') {
@@ -93,6 +94,7 @@ async function adminUpdateAbout(req, res) {
         bio: String(owner.bio || '').trim().slice(0, 1000),
         links: String(owner.links || '').trim().slice(0, 300),
       };
+      settings.markModified('owner');
     }
 
     if (contentProvider && typeof contentProvider === 'object') {
@@ -104,11 +106,12 @@ async function adminUpdateAbout(req, res) {
         bio: String(contentProvider.bio || '').trim().slice(0, 1000),
         links: String(contentProvider.links || '').trim().slice(0, 300),
       };
+      settings.markModified('contentProvider');
     }
 
     await settings.save();
     return res.json({
-      message: 'About details saved.',
+      message: 'About & owner details saved successfully.',
       about: serialize(settings),
     });
   } catch (err) {

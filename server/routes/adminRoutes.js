@@ -44,7 +44,7 @@ router.post(
     body('title').trim().notEmpty(),
     body('type').isIn(['notes', 'slides', 'pyqs']),
     body('subjectId').notEmpty(),
-    body('driveUrl').trim().isURL().withMessage('driveUrl must be a valid URL'),
+    body('driveUrl').trim().notEmpty().withMessage('driveUrl is required'),
   ],
   validate,
   admin.createResource
