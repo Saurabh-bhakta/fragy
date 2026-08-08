@@ -102,19 +102,35 @@ function Subject() {
     setAccessLoading(true);
     setError('');
 
+    // Pre-open new tab synchronously to bypass browser popup blockers
+    const newTab = window.open('about:blank', '_blank');
+
     try {
-      if (pendingResource.localOnly && pendingResource.driveUrl) {
-        window.open(pendingResource.driveUrl, '_blank', 'noopener,noreferrer');
-        setPendingResource(null);
-        return;
+      let targetUrl = pendingResource.driveUrl || '';
+
+      if (!pendingResource.localOnly) {
+        // Secure access: backend returns Drive URL only for authenticated users
+        const data = await api.accessResource(pendingResource.id);
+        targetUrl = data.driveUrl || targetUrl;
       }
 
-      // Secure access: backend returns Drive URL only for authenticated users
-      const data = await api.accessResource(pendingResource.id);
-      if (data.notice) setAccessNotice(data.notice);
-      window.open(data.driveUrl, '_blank', 'noopener,noreferrer');
+      if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      if (targetUrl) {
+        if (newTab && !newTab.closed) {
+          newTab.location.href = targetUrl;
+        } else {
+          window.location.href = targetUrl;
+        }
+      } else {
+        if (newTab && !newTab.closed) newTab.close();
+        setError('Resource URL is missing or invalid.');
+      }
       setPendingResource(null);
     } catch (err) {
+      if (newTab && !newTab.closed) newTab.close();
       setError(err.message || 'Could not open resource.');
       if (err.status === 401) {
         navigate('/login', {

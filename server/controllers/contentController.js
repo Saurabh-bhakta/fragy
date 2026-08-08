@@ -108,17 +108,22 @@ async function accessResource(req, res) {
       return res.status(404).json({ message: 'Resource not found.' });
     }
 
+    let driveUrl = resource.driveUrl || '';
+    if (driveUrl && !/^https?:\/\//i.test(driveUrl)) {
+      driveUrl = 'https://' + driveUrl;
+    }
+
     return res.json({
       id: resource._id,
       title: resource.title,
       type: resource.type,
       description: resource.description,
-      driveUrl: resource.driveUrl,
+      driveUrl,
       notice:
         'These materials are provided for educational purposes. Please respect the effort of the creator and do not redistribute them without permission.',
     });
   } catch (err) {
-    console.error(err);
+    console.error('accessResource error:', err);
     return res.status(500).json({ message: 'Failed to access resource.' });
   }
 }
