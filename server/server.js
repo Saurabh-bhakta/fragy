@@ -1,13 +1,15 @@
 /**
- * NotesHub API server
+ * NotesHub API server with Real-Time Socket.io support.
  * Run: npm run dev  (from /server)
  */
 const path = require('path');
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const { Server } = require('socket.io');
 
 // Load .env from project root (notes-hub/.env)
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -17,10 +19,40 @@ const authRoutes = require('./routes/authRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const membersRoutes = require('./routes/membersRoutes');
+const groupRoutes = require('./routes/groupRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+// Setup Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  // Join user-specific or group-specific socket room
+  socket.on('join_room', (roomName) => {
+    if (roomName) {
+      socket.join(roomName);
+    }
+  });
+
+  socket.on('leave_room', (roomName) => {
+    if (roomName) {
+      socket.leave(roomName);
+    }
+  });
+});
 
 async function start() {
   await connectDB();
@@ -49,6 +81,11 @@ async function start() {
   app.use('/api/auth', authRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/comments', commentRoutes);
+  app.use('/api/announcements', announcementRoutes);
+  app.use('/api/profile', profileRoutes);
+  app.use('/api/members', membersRoutes);
+  app.use('/api/groups', groupRoutes);
+  app.use('/api/chat', chatRoutes);
   app.use('/api', contentRoutes);
 
   // 404 for unknown API paths
@@ -62,8 +99,8 @@ async function start() {
     res.status(500).json({ message: 'Internal server error.' });
   });
 
-  app.listen(PORT, () => {
-    console.log(`✓ NotesHub API listening on http://localhost:${PORT}`);
+  server.listen(PORT, () => {
+    console.log(`✓ NotesHub API with Real-time Chat listening on http://localhost:${PORT}`);
   });
 }
 

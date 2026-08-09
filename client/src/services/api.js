@@ -90,4 +90,50 @@ export const api = {
     request(`/admin/resources/${id}`, { method: 'DELETE', auth: true }),
   adminListComments: () => request('/admin/comments', { auth: true }),
   adminDeleteComment: (id) => request(`/admin/comments/${id}`, { method: 'DELETE', auth: true }),
+  getAnnouncements: () => request('/announcements'),
+  adminGetAnnouncements: () => request('/announcements/admin', { auth: true }),
+  adminCreateAnnouncement: (body) => request('/announcements', { method: 'POST', body, auth: true }),
+  adminUpdateAnnouncement: (id, body) =>
+    request(`/announcements/${id}`, { method: 'PUT', body, auth: true }),
+  adminToggleAnnouncement: (id) =>
+    request(`/announcements/${id}/toggle`, { method: 'PATCH', auth: true }),
+  adminDeleteAnnouncement: (id) =>
+    request(`/announcements/${id}`, { method: 'DELETE', auth: true }),
+  // Profile
+  getProfile: () => request('/profile/me', { auth: true }),
+  updateProfile: (body) => request('/profile/me', { method: 'PUT', body, auth: true }),
+  getPublicProfile: (userId) => request(`/profile/${userId}`, { auth: true }),
+  // Members
+  getMembers: (q = '', page = 1) =>
+    request(`/members?q=${encodeURIComponent(q)}&page=${page}`, { auth: true }),
+  // Groups
+  createGroup: (body) => request('/groups', { method: 'POST', body, auth: true }),
+  getGroups: () => request('/groups', { auth: true }),
+  getGroup: (id) => request(`/groups/${id}`, { auth: true }),
+  requestToJoinGroup: (id) => request(`/groups/${id}/join`, { method: 'POST', auth: true }),
+  getPendingGroupRequests: (id) => request(`/groups/${id}/pending-requests`, { auth: true }),
+  handleGroupJoinRequest: (id, membershipId, action) =>
+    request(`/groups/${id}/handle-request`, { method: 'POST', body: { membershipId, action }, auth: true }),
+  getGroupParticipants: (id) => request(`/groups/${id}/participants`, { auth: true }),
+  getAvailableGroupUsers: (id, q = '', page = 1) =>
+    request(`/groups/${id}/available-users?q=${encodeURIComponent(q)}&page=${page}`, { auth: true }),
+  addGroupMember: (groupId, userId) =>
+    request(`/groups/${groupId}/members`, { method: 'POST', body: { userId }, auth: true }),
+  removeGroupParticipant: (groupId, userId) =>
+    request(`/groups/${groupId}/members/${userId}`, { method: 'DELETE', auth: true }),
+  // Chat
+  getOrCreateConversation: (recipientId) =>
+    request('/chat/conversations', { method: 'POST', body: { recipientId }, auth: true }),
+  getConversations: () => request('/chat/conversations', { auth: true }),
+  getPrivateMessages: (conversationId) =>
+    request(`/chat/conversations/${conversationId}/messages`, { auth: true }),
+  sendPrivateMessage: (conversationId, content) =>
+    request(`/chat/conversations/${conversationId}/messages`, { method: 'POST', body: { content }, auth: true }),
+  getGroupMessages: (groupId) => request(`/chat/groups/${groupId}/messages`, { auth: true }),
+  sendGroupMessage: (groupId, content) =>
+    request(`/chat/groups/${groupId}/messages`, { method: 'POST', body: { content }, auth: true }),
+  editChatMessage: (messageId, content) =>
+    request(`/chat/messages/${messageId}`, { method: 'PUT', body: { content }, auth: true }),
+  deleteChatMessage: (messageId) =>
+    request(`/chat/messages/${messageId}`, { method: 'DELETE', auth: true }),
 };

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ResourceCard from '../components/ResourceCard';
-import AccessModal from '../components/AccessModal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import {
@@ -18,7 +17,7 @@ const RESOURCE_SECTIONS = [
 
 /**
  * Subject page with Notes / Slides / PYQs.
- * Opening a resource requires login; Drive URL comes from a protected API.
+ * Directly opens driveUrl in a new tab when clicked.
  */
 function Subject() {
   const { semesterId, subjectId } = useParams();
@@ -33,10 +32,6 @@ function Subject() {
   const [resources, setResources] = useState(() => getResourcesForSubject(subjectId));
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
-  const [pendingResource, setPendingResource] = useState(null);
-  const [accessNotice, setAccessNotice] = useState('');
-  const [accessLoading, setAccessLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -82,40 +77,15 @@ function Subject() {
       return;
     }
 
-    // Mock resources (no Mongo id) open after confirmation with local driveUrl
-    if (typeof resource.id === 'string' && resource.id.includes('-') && !resource.id.match(/^[a-f0-9]{24}$/i)) {
-      setPendingResource({ ...resource, localOnly: true });
-      setAccessNotice(
-        'These materials are provided for educational purposes. Please respect the effort of the creator and do not redistribute them without permission.'
-      );
-      return;
+    let targetUrl = resource.driveUrl || '';
+    if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
     }
 
-    setPendingResource(resource);
-    setAccessNotice(
-      'These materials are provided for educational purposes. Please respect the effort of the creator and do not redistribute them without permission.'
-    );
-  };
-
-  const handleContinue = () => {
-    if (!pendingResource) return;
-    setError('');
-
-    try {
-      let targetUrl = pendingResource.driveUrl || '';
-
-      if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
-        targetUrl = 'https://' + targetUrl;
-      }
-
-      if (targetUrl) {
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        setError('Resource URL is missing or invalid.');
-      }
-      setPendingResource(null);
-    } catch (err) {
-      setError(err.message || 'Could not open resource.');
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      setError('Resource URL is missing or invalid.');
     }
   };
 
@@ -147,7 +117,7 @@ function Subject() {
         </nav>
         <h1>{subject.name}</h1>
         <p className="muted">
-          {subject.code} · Notes, slides, and previous-year questions
+          Notes, slides, and previous-year questions
         </p>
       </div>
 
@@ -185,15 +155,6 @@ function Subject() {
           })}
         </div>
       </section>
-
-      <AccessModal
-        open={Boolean(pendingResource)}
-        title={pendingResource?.title}
-        notice={accessNotice}
-        loading={accessLoading}
-        onCancel={() => setPendingResource(null)}
-        onContinue={handleContinue}
-      />
     </div>
   );
 }

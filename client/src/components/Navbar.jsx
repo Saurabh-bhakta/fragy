@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 /**
- * Top navigation bar — auth-aware links for Profile / Login / Admin / Logout.
+ * Top navigation bar — single right-corner theme toggle + Announcements link.
  */
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -38,6 +40,9 @@ function Navbar() {
           <a href="/#semesters" className="nav-link" onClick={closeMenu}>
             Semesters
           </a>
+          <NavLink to="/announcements" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
+            Announcements
+          </NavLink>
           <NavLink to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
             About
           </NavLink>
@@ -85,6 +90,17 @@ function Navbar() {
               </NavLink>
             </>
           )}
+
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            style={{ marginLeft: '0.35rem' }}
+          >
+            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+          </button>
         </nav>
       </div>
     </header>

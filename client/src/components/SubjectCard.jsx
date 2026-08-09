@@ -9,7 +9,6 @@ function SubjectCard({ semesterId, subject }) {
       to={`/semester/${semesterId}/subject/${subject.id}`}
       className="subject-card fade-up"
     >
-      <p className="muted">{subject.code}</p>
       <h3>{subject.name}</h3>
       <p className="muted">Notes · Slides · PYQs</p>
     </Link>

@@ -1,138 +1,302 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 /**
- * User profile — account info + change password form.
+ * User profile page — Edit Name, Bio, Profile Picture + Change Password.
  */
 function Profile() {
-  const { user, logout } = useAuth();
-  const [form, setForm] = useState({
+  const { user: authUser, logout } = useAuth();
+
+  const [profile, setProfile] = useState({
+    name: authUser?.name || '',
+    email: authUser?.email || '',
+    bio: '',
+    avatarUrl: '',
+    createdAt: authUser?.createdAt || null,
+  });
+
+  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
-  if (!user) return null;
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getProfile()
+      .then((data) => {
+        if (!cancelled && data.user) {
+          setProfile({
+            name: data.user.name || '',
+            email: data.user.email || '',
+            bio: data.user.bio || '',
+            avatarUrl: data.user.avatarUrl || '',
+            createdAt: data.user.createdAt,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load profile:', err);
+      });
 
-  const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString(undefined, {
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!authUser) return null;
+
+  const joined = profile.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       })
     : '—';
 
-  const initial = (user.name || '?').charAt(0).toUpperCase();
+  const initial = (profile.name || '?').charAt(0).toUpperCase();
 
-  function update(field) {
-    return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-  }
+  // Handle local image file upload & conversion to Base64
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  async function handleChangePassword(e) {
-    e.preventDefault();
-    setMessage('');
-    setError('');
-
-    if (form.newPassword !== form.confirmPassword) {
-      setError('New passwords do not match.');
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please upload a valid image file (PNG, JPG, WebP).');
       return;
     }
 
-    setLoading(true);
+    if (file.size > 1.5 * 1024 * 1024) {
+      setProfileError('Image size must be less than 1.5 MB.');
+      return;
+    }
+
+    setProfileError('');
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfile((prev) => ({ ...prev, avatarUrl: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setProfileMessage('');
+    setProfileError('');
+    setProfileLoading(true);
+
     try {
-      const data = await api.changePassword(form);
-      setMessage(data.message || 'Password updated successfully.');
-      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      const data = await api.updateProfile({
+        name: profile.name,
+        bio: profile.bio,
+        avatarUrl: profile.avatarUrl,
+      });
+      setProfileMessage(data.message || 'Profile updated successfully!');
+      if (data.user) {
+        setProfile((prev) => ({
+          ...prev,
+          name: data.user.name,
+          bio: data.user.bio,
+          avatarUrl: data.user.avatarUrl,
+        }));
+      }
+    } catch (err) {
+      setProfileError(err.message || 'Could not update profile.');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMessage('');
+    setPasswordError('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const data = await api.changePassword(passwordForm);
+      setPasswordMessage(data.message || 'Password updated successfully.');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
       const details = err.data?.errors?.map((x) => x.msg).join(' ');
-      setError(details || err.message || 'Could not change password.');
+      setPasswordError(details || err.message || 'Could not change password.');
     } finally {
-      setLoading(false);
+      setPasswordLoading(false);
     }
-  }
+  };
 
   return (
     <div className="page section">
-      <div className="container" style={{ display: 'grid', gap: '1.25rem', justifyItems: 'center' }}>
-        <div className="profile-card">
-          <div className="avatar" aria-hidden="true">
-            {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : initial}
-          </div>
-          <h1>{user.name}</h1>
-          <p className="muted">{user.email}</p>
+      <div className="container" style={{ display: 'grid', gap: '2rem', maxWidth: '720px' }}>
+        
+        {/* Profile Card & Info */}
+        <div className="form-card" style={{ width: '100%', margin: 0 }}>
+          <div className="profile-header-meta" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div
+              className="avatar"
+              style={{
+                width: '90px',
+                height: '90px',
+                margin: '0 auto 1rem auto',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: 'var(--color-brand-soft)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                fontWeight: 700,
+                color: 'var(--color-brand)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              }}
+            >
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                initial
+              )}
+            </div>
 
-          <p>
-            <strong>Member since:</strong> {joined}
-          </p>
-          <p>
-            <strong>Role:</strong> {user.role}
-          </p>
-
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-            <Link to="/" className="btn btn-primary">
-              Browse materials
-            </Link>
-            <button type="button" className="btn btn-secondary" onClick={logout}>
-              Logout
-            </button>
+            <h1 style={{ fontSize: '1.75rem', margin: '0 0 0.25rem' }}>{profile.name}</h1>
+            <p className="muted" style={{ margin: '0 0 0.5rem' }}>{profile.email}</p>
+            <p className="muted" style={{ fontSize: '0.85rem' }}>Member since {joined}</p>
           </div>
+
+          {profileError && <div className="alert alert-error">{profileError}</div>}
+          {profileMessage && <div className="alert alert-success">{profileMessage}</div>}
+
+          <form onSubmit={handleUpdateProfile}>
+            <div className="form-group">
+              <label>Profile Picture</label>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ fontSize: '0.88rem' }}
+                />
+                {profile.avatarUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                    onClick={() => setProfile((p) => ({ ...p, avatarUrl: '' }))}
+                  >
+                    Remove Photo
+                  </button>
+                )}
+              </div>
+              <small className="muted" style={{ display: 'block', marginTop: '0.25rem' }}>
+                Upload a photo (PNG, JPG, WebP up to 1.5MB).
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profileName">Full Name</label>
+              <input
+                id="profileName"
+                type="text"
+                required
+                maxLength={80}
+                value={profile.name}
+                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profileBio">Bio / About Me</label>
+              <textarea
+                id="profileBio"
+                rows={3}
+                maxLength={300}
+                placeholder="Share a short bio about yourself, courses, or interests..."
+                value={profile.bio}
+                onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                style={{ width: '100%', padding: '0.75rem' }}
+              />
+              <small className="muted" style={{ display: 'block', textAlign: 'right' }}>
+                {profile.bio.length}/300
+              </small>
+            </div>
+
+            <div className="form-actions" style={{ display: 'flex', gap: '1rem' }}>
+              <button type="submit" className="btn btn-primary" disabled={profileLoading}>
+                {profileLoading ? 'Saving...' : 'Save Profile'}
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={logout}>
+                Logout
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div className="profile-card">
-          <h2>Change password</h2>
+        {/* Change Password */}
+        <div className="form-card" style={{ width: '100%', margin: 0 }}>
+          <h2>Change Password</h2>
           <p className="muted">Enter your current password, then choose a new one.</p>
 
-          {error && <div className="alert alert-error">{error}</div>}
-          {message && <div className="alert alert-success">{message}</div>}
+          {passwordError && <div className="alert alert-error">{passwordError}</div>}
+          {passwordMessage && <div className="alert alert-success">{passwordMessage}</div>}
 
           <form onSubmit={handleChangePassword}>
             <div className="form-group">
-              <label htmlFor="currentPassword">Current password</label>
+              <label htmlFor="currentPassword">Current Password</label>
               <input
                 id="currentPassword"
                 type="password"
                 required
                 autoComplete="current-password"
-                value={form.currentPassword}
-                onChange={update('currentPassword')}
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, currentPassword: e.target.value }))}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="newPassword">New password</label>
+              <label htmlFor="newPassword">New Password</label>
               <input
                 id="newPassword"
                 type="password"
                 required
                 minLength={6}
                 autoComplete="new-password"
-                value={form.newPassword}
-                onChange={update('newPassword')}
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, newPassword: e.target.value }))}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm new password</label>
+              <label htmlFor="confirmPassword">Confirm New Password</label>
               <input
                 id="confirmPassword"
                 type="password"
                 required
                 minLength={6}
                 autoComplete="new-password"
-                value={form.confirmPassword}
-                onChange={update('confirmPassword')}
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm((f) => ({ ...f, confirmPassword: e.target.value }))}
               />
             </div>
             <div className="form-actions">
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Updating…' : 'Update password'}
+              <button type="submit" className="btn btn-primary" disabled={passwordLoading}>
+                {passwordLoading ? 'Updating...' : 'Update Password'}
               </button>
             </div>
           </form>
         </div>
+
       </div>
     </div>
   );

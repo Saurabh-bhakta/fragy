@@ -7,8 +7,7 @@ import { api } from '../services/api';
 import { semesters as fallbackSemesters } from '../data/semesters';
 
 /**
- * Landing page: hero + semester grid.
- * Guests can see semester cards, but opening one requires login.
+ * Modern Home page — Hero + Semester Grid + Message from Owner.
  */
 function Home() {
   const { isAuthenticated } = useAuth();
@@ -18,6 +17,7 @@ function Home() {
   useEffect(() => {
     let cancelled = false;
 
+    // Load semesters
     api
       .getSemesters()
       .then((data) => {
@@ -46,17 +46,22 @@ function Home() {
     <div className="page">
       <Hero />
 
+      {/* Browse by Semester */}
       <section id="semesters" className="section">
         <div className="container">
           <div className="section-header">
+            <div className="section-badge">
+              <span className="badge-icon">📚</span> Curriculum
+            </div>
             <h2>Browse by Semester</h2>
             <p>Pick a semester to explore subjects and study materials.</p>
           </div>
 
           {!isAuthenticated && (
-            <div className="alert alert-error" style={{ marginBottom: '1.25rem' }}>
+            <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
               Create an account or log in to view semester subjects and download materials.{' '}
-              <Link to="/register">Register</Link> · <Link to="/login">Login</Link>
+              <Link to="/register" style={{ fontWeight: 600, textDecoration: 'underline' }}>Register</Link> ·{' '}
+              <Link to="/login" style={{ fontWeight: 600, textDecoration: 'underline' }}>Login</Link>
             </div>
           )}
 
@@ -69,16 +74,19 @@ function Home() {
           </div>
 
           {/* Message from Owner section */}
-          <div className="owner-message-card">
+          <div className="owner-message-card fade-up">
             <div className="owner-message-header">
-              <span className="owner-message-icon" aria-hidden="true">📢</span>
-              <h3 className="owner-message-title">Message from Owner</h3>
+              <span className="owner-message-icon" aria-hidden="true">💡</span>
+              <div>
+                <h3 className="owner-message-title">Message from Owner</h3>
+                <span className="owner-message-subtitle">Platform Update & Contribution</span>
+              </div>
             </div>
             <div className="owner-message-content">
-              <p>The content gets updated on weekly basis,</p>
+              <p>The content gets updated on weekly basis.</p>
               <p>
                 If you want to share any type of content which would contribute please refer to{' '}
-                <Link to="/about" className="owner-message-link">about section</Link> and contact me . Thank you
+                <Link to="/about" className="owner-message-link">about section</Link> and contact me. Thank you
               </p>
             </div>
           </div>
@@ -86,14 +94,14 @@ function Home() {
       </section>
 
       {/* Callout section for student thoughts & comments */}
-      <section className="section" style={{ paddingTop: '0', paddingBottom: '3rem' }}>
+      <section className="section" style={{ paddingTop: '0', paddingBottom: '3.5rem' }}>
         <div className="container">
-          <div className="thoughts-banner">
+          <div className="thoughts-banner fade-up">
             <h2>Please leave your beautiful thoughts</h2>
             <p className="muted">
               We would love to hear your feedback, suggestions, or experiences using Fragy!
             </p>
-            <Link to="/comments" className="btn btn-primary">
+            <Link to="/comments" className="btn btn-primary btn-lg">
               Share Your Thoughts 💬
             </Link>
           </div>

@@ -1,24 +1,29 @@
+const path = require('path');
+const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
+// Load .env from notes-hub/.env (two levels up from server/config)
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 /**
- * Connect to MongoDB using the URI from environment variables.
+ * Connect to MongoDB using process.env.MONGODB_URI exclusively.
+ * Fails clearly if connection to Cloud Atlas fails without falling back to local database.
  */
 async function connectDB() {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/fragy';
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error('MONGODB_URI is not defined in environment variables.');
+  }
 
   mongoose.set('strictQuery', true);
   try {
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
     console.log(`✓ MongoDB connected (${uri.includes('mongodb+srv') ? 'Cloud Atlas' : 'Local'})`);
   } catch (err) {
-    if (uri.includes('mongodb+srv')) {
-      console.warn('⚠️ Cloud MongoDB connection timed out. Falling back to local MongoDB...');
-      const localUri = 'mongodb://127.0.0.1:27017/fragy';
-      await mongoose.connect(localUri);
-      console.log('✓ MongoDB connected (Local Fallback)');
-    } else {
-      throw err;
-    }
+    console.error('❌ MongoDB connection error:', err.message);
+    throw err;
   }
 }
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
-const TABS = ['overview', 'content', 'materials', 'comments', 'about', 'users'];
+const TABS = ['overview', 'announcements', 'content', 'materials', 'comments', 'about', 'users'];
 
 /**
- * Admin panel — manage content, uploaded materials, student comments, owner details, and users.
+ * Admin panel — manage content, announcements, uploaded materials, student comments, owner details, and users.
  */
 function Admin() {
   const [tab, setTab] = useState('overview');
@@ -15,6 +15,11 @@ function Admin() {
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [commentsList, setCommentsList] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [announcementsList, setAnnouncementsList] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '' });
+  const [announcementSubmitting, setAnnouncementSubmitting] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -74,6 +79,18 @@ function Admin() {
     }
   }
 
+  async function loadAdminAnnouncements() {
+    setAnnouncementsLoading(true);
+    try {
+      const data = await api.adminGetAnnouncements();
+      setAnnouncementsList(data.announcements || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load announcements.');
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh();
   }, []);
@@ -81,6 +98,8 @@ function Admin() {
   useEffect(() => {
     if (tab === 'users') {
       api.adminUsers().then((d) => setUsers(d.users || [])).catch((e) => setError(e.message));
+    } else if (tab === 'announcements') {
+      loadAdminAnnouncements();
     } else if (tab === 'materials') {
       loadResources();
     } else if (tab === 'comments') {
@@ -116,6 +135,68 @@ function Admin() {
         .finally(() => setAboutLoading(false));
     }
   }, [tab]);
+
+  async function onCreateAnnouncement(e) {
+    e.preventDefault();
+    setMessage('');
+    setError('');
+    setAnnouncementSubmitting(true);
+    try {
+      const res = await api.adminCreateAnnouncement(announcementForm);
+      setMessage(res.message || 'Announcement published successfully.');
+      setAnnouncementForm({ title: '', message: '' });
+      loadAdminAnnouncements();
+    } catch (err) {
+      setError(err.message || 'Failed to publish announcement.');
+    } finally {
+      setAnnouncementSubmitting(false);
+    }
+  }
+
+  async function onSaveEditedAnnouncement(e) {
+    e.preventDefault();
+    if (!editingAnnouncement) return;
+    setMessage('');
+    setError('');
+    try {
+      await api.adminUpdateAnnouncement(editingAnnouncement.id, {
+        title: editingAnnouncement.title,
+        message: editingAnnouncement.message,
+      });
+      setMessage('Announcement updated successfully.');
+      setEditingAnnouncement(null);
+      loadAdminAnnouncements();
+    } catch (err) {
+      setError(err.message || 'Failed to update announcement.');
+    }
+  }
+
+  async function onToggleAnnouncement(id) {
+    setMessage('');
+    setError('');
+    try {
+      const res = await api.adminToggleAnnouncement(id);
+      setMessage(res.message || 'Status updated.');
+      loadAdminAnnouncements();
+    } catch (err) {
+      setError(err.message || 'Failed to toggle status.');
+    }
+  }
+
+  async function onDeleteAnnouncement(id, title) {
+    if (!window.confirm(`Are you sure you want to delete announcement "${title}"?`)) {
+      return;
+    }
+    setMessage('');
+    setError('');
+    try {
+      await api.adminDeleteAnnouncement(id);
+      setMessage(`Announcement "${title}" deleted successfully.`);
+      loadAdminAnnouncements();
+    } catch (err) {
+      setError(err.message || 'Failed to delete announcement.');
+    }
+  }
 
   async function loadSubjects(semesterId) {
     if (!semesterId) {
@@ -273,6 +354,161 @@ function Admin() {
             <div className="stat-pill">
               <strong>{overview.resources}</strong>
               Resources
+            </div>
+          </div>
+        )}
+
+        {tab === 'announcements' && (
+          <div className="admin-announcements-wrap" style={{ display: 'grid', gap: '2rem' }}>
+            <form className="stack-form form-card" style={{ margin: 0, maxWidth: '100%' }} onSubmit={onCreateAnnouncement}>
+              <h2>Publish New Announcement 📢</h2>
+              <p className="muted">
+                Publishing a new announcement will automatically notify all registered users via email.
+              </p>
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  required
+                  placeholder="e.g. New Unit 2 Notes Added for Basic Electronics"
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Message / Details</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Enter detailed announcement message..."
+                  value={announcementForm.message}
+                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, message: e.target.value }))}
+                  style={{ width: '100%', padding: '0.75rem' }}
+                />
+              </div>
+              <button className="btn btn-primary" type="submit" disabled={announcementSubmitting}>
+                {announcementSubmitting ? 'Publishing & Notifying...' : 'Publish Announcement 🚀'}
+              </button>
+            </form>
+
+            {editingAnnouncement && (
+              <form className="stack-form form-card" style={{ margin: 0, maxWidth: '100%', borderColor: 'var(--color-brand)' }} onSubmit={onSaveEditedAnnouncement}>
+                <h2>Edit Announcement ✏️</h2>
+                <div className="form-group">
+                  <label>Title</label>
+                  <input
+                    required
+                    value={editingAnnouncement.title}
+                    onChange={(e) => setEditingAnnouncement((f) => ({ ...f, title: e.target.value }))}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Message</label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={editingAnnouncement.message}
+                    onChange={(e) => setEditingAnnouncement((f) => ({ ...f, message: e.target.value }))}
+                    style={{ width: '100%', padding: '0.75rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-primary" type="submit">
+                    Save Changes
+                  </button>
+                  <button className="btn btn-secondary" type="button" onClick={() => setEditingAnnouncement(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="form-card" style={{ maxWidth: '100%' }}>
+              <h2>Announcements Manager ({announcementsList.length})</h2>
+              <p className="muted">Activate/Deactivate, edit, or delete existing site announcements.</p>
+
+              {announcementsLoading ? (
+                <p className="muted">Loading announcements...</p>
+              ) : announcementsList.length === 0 ? (
+                <p className="muted">No announcements posted yet.</p>
+              ) : (
+                <div className="table-wrap" style={{ marginTop: '1rem' }}>
+                  <table className="data">
+                    <thead>
+                      <tr>
+                        <th>Title & Content</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {announcementsList.map((a) => (
+                        <tr key={a.id || a._id}>
+                          <td>
+                            <strong style={{ fontSize: '1rem', display: 'block', color: 'var(--color-ink)' }}>{a.title}</strong>
+                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'var(--color-ink-muted)', whiteSpace: 'pre-wrap' }}>
+                              {a.message}
+                            </p>
+                          </td>
+                          <td>
+                            <span
+                              className="badge"
+                              style={{
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '999px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                background: a.isActive ? 'rgba(15, 118, 110, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                color: a.isActive ? 'var(--color-brand)' : '#ef4444',
+                              }}
+                            >
+                              {a.isActive ? '🟢 Active' : '🔴 Inactive'}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.85rem', color: 'var(--color-ink-muted)' }}>
+                            {new Date(a.createdAt).toLocaleString()}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}
+                                onClick={() => onToggleAnnouncement(a.id || a._id)}
+                              >
+                                {a.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}
+                                onClick={() => setEditingAnnouncement({ id: a.id || a._id, title: a.title, message: a.message })}
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  borderColor: '#fca5a5',
+                                  padding: '0.35rem 0.65rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '600',
+                                }}
+                                onClick={() => onDeleteAnnouncement(a.id || a._id, a.title)}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

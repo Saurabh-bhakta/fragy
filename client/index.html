@@ -15,6 +15,18 @@
       rel="stylesheet"
     />
     <title>Fragy — Study Materials</title>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('fragy_theme');
+          if (t === 'dark' || t === 'light') {
+            document.documentElement.setAttribute('data-theme', t);
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
