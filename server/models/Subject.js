@@ -26,4 +26,9 @@ const subjectSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+subjectSchema.index({
+  semesterId: 1,
+  isActive: 1,
+});
+
 module.exports = mongoose.model('Subject', subjectSchema);

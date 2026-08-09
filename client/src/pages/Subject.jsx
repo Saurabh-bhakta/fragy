@@ -97,48 +97,25 @@ function Subject() {
     );
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!pendingResource) return;
-    setAccessLoading(true);
     setError('');
-
-    // Pre-open new tab synchronously to bypass browser popup blockers
-    const newTab = window.open('about:blank', '_blank');
 
     try {
       let targetUrl = pendingResource.driveUrl || '';
-
-      if (!pendingResource.localOnly) {
-        // Secure access: backend returns Drive URL only for authenticated users
-        const data = await api.accessResource(pendingResource.id);
-        targetUrl = data.driveUrl || targetUrl;
-      }
 
       if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
         targetUrl = 'https://' + targetUrl;
       }
 
       if (targetUrl) {
-        if (newTab && !newTab.closed) {
-          newTab.location.href = targetUrl;
-        } else {
-          window.location.href = targetUrl;
-        }
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
       } else {
-        if (newTab && !newTab.closed) newTab.close();
         setError('Resource URL is missing or invalid.');
       }
       setPendingResource(null);
     } catch (err) {
-      if (newTab && !newTab.closed) newTab.close();
       setError(err.message || 'Could not open resource.');
-      if (err.status === 401) {
-        navigate('/login', {
-          state: { from: `/semester/${semesterId}/subject/${subjectId}` },
-        });
-      }
-    } finally {
-      setAccessLoading(false);
     }
   };
 

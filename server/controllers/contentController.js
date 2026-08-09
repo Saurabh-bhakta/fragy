@@ -60,9 +60,8 @@ async function getSubject(req, res) {
       return res.status(404).json({ message: 'Subject not found.' });
     }
 
-    // Public metadata — Drive URLs are NOT returned until access endpoint is called
     const resources = await Resource.find({ subjectId: subject._id, isActive: true })
-      .select('title type description requiresAuth createdAt')
+      .select('title type driveUrl description requiresAuth createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -73,6 +72,7 @@ async function getSubject(req, res) {
           id: r._id,
           title: r.title,
           type: r.type,
+          driveUrl: r.driveUrl,
           description: r.description,
           requiresAuth: r.requiresAuth,
         });

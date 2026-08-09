@@ -45,4 +45,10 @@ const resourceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+resourceSchema.index({
+  subjectId: 1,
+  isActive: 1,
+  createdAt: -1,
+});
+
 module.exports = mongoose.model('Resource', resourceSchema);
