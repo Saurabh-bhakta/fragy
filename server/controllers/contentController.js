@@ -61,18 +61,20 @@ async function getSubject(req, res) {
     }
 
     const resources = await Resource.find({ subjectId: subject._id, isActive: true })
-      .select('title type driveUrl description requiresAuth createdAt')
+      .select('title type driveUrl url link drive_url fileUrl description requiresAuth createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
     const grouped = { notes: [], slides: [], pyqs: [] };
     for (const r of resources) {
       if (grouped[r.type]) {
+        const rawUrl = r.driveUrl || r.url || r.link || r.drive_url || r.fileUrl || '';
         grouped[r.type].push({
           id: r._id,
           title: r.title,
           type: r.type,
-          driveUrl: r.driveUrl,
+          driveUrl: rawUrl,
+          url: rawUrl,
           description: r.description,
           requiresAuth: r.requiresAuth,
         });

@@ -77,15 +77,31 @@ function Subject() {
       return;
     }
 
-    let targetUrl = resource.driveUrl || '';
+    const rawUrl =
+      resource?.driveUrl ||
+      resource?.url ||
+      resource?.link ||
+      resource?.fileUrl ||
+      resource?.drive_url ||
+      '';
+
+    let targetUrl = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+
     if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
       targetUrl = 'https://' + targetUrl;
     }
 
     if (targetUrl) {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      try {
+        const newWin = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+          window.location.href = targetUrl;
+        }
+      } catch {
+        window.location.href = targetUrl;
+      }
     } else {
-      setError('Resource URL is missing or invalid.');
+      setError(`No valid Google Drive link is available for "${resource?.title || 'this resource'}".`);
     }
   };
 

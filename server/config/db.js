@@ -11,18 +11,26 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
  * Fails clearly if connection to Cloud Atlas fails without falling back to local database.
  */
 async function connectDB() {
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    throw new Error('MONGODB_URI is not defined in environment variables.');
-  }
+  const primaryUri = process.env.MONGODB_URI;
+  const localUri = process.env.LOCAL_MONGODB_URI || 'mongodb://127.0.0.1:27017/fragy';
 
   mongoose.set('strictQuery', true);
+
+  if (primaryUri) {
+    try {
+      await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 5000 });
+      console.log(`✓ MongoDB connected (${primaryUri.includes('mongodb+srv') ? 'Cloud Atlas' : 'Local Primary'})`);
+      return;
+    } catch (err) {
+      console.warn(`⚠️ Primary MongoDB connection failed (${err.message}). Falling back to local MongoDB...`);
+    }
+  }
+
   try {
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
-    console.log(`✓ MongoDB connected (${uri.includes('mongodb+srv') ? 'Cloud Atlas' : 'Local'})`);
+    await mongoose.connect(localUri, { serverSelectionTimeoutMS: 5000 });
+    console.log(`✓ Local MongoDB connected (${localUri})`);
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error('❌ Local MongoDB connection error:', err.message);
     throw err;
   }
 }
