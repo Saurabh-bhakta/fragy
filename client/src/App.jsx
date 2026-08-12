@@ -20,6 +20,7 @@ import Chat from './pages/Chat';
 import About from './pages/About';
 import Comments from './pages/Comments';
 import Announcements from './pages/Announcements';
+import CompleteProfile from './pages/CompleteProfile';
 import Admin from './pages/Admin';
 
 /**
@@ -54,6 +55,7 @@ function App() {
               />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/about" element={<About />} />
               <Route path="/comments" element={<Comments />} />
               <Route

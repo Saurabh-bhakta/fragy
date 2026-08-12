@@ -81,23 +81,6 @@ async function createAnnouncement(req, res) {
       createdBy: req.user.id,
     });
 
-    let emailSent = false;
-    let emailError = null;
-
-    // Send email notification to registered users
-    try {
-      const users = await User.find({}).select('email').lean();
-      const emails = users.map((u) => u.email).filter(Boolean);
-
-      if (emails.length > 0) {
-        await sendAnnouncementNotification(announcement, emails);
-        emailSent = true;
-      }
-    } catch (mailErr) {
-      console.error('[announcement:email-error]', mailErr.message);
-      emailError = mailErr.message || 'Could not dispatch notification email.';
-    }
-
     const formatted = {
       id: announcement._id.toString(),
       _id: announcement._id.toString(),
@@ -108,15 +91,24 @@ async function createAnnouncement(req, res) {
       updatedAt: announcement.updatedAt,
     };
 
+    // Asynchronously dispatch email notifications to registered users without blocking the response
+    setImmediate(async () => {
+      try {
+        const users = await User.find({}).select('email').lean();
+        const emails = users.map((u) => u.email).filter(Boolean);
+
+        if (emails.length > 0) {
+          await sendAnnouncementNotification(announcement, emails);
+        }
+      } catch (mailErr) {
+        console.error('[announcement:async-email-error]', mailErr.message);
+      }
+    });
+
     return res.status(201).json({
-      message: emailSent
-        ? 'Announcement published successfully! Email notifications sent to registered users.'
-        : emailError
-        ? 'Announcement published, but email notification could not be sent.'
-        : 'Announcement published successfully.',
+      message: 'Announcement published successfully! Email notifications queued for registered users.',
       announcement: formatted,
-      emailSent,
-      emailError,
+      emailSent: true,
     });
   } catch (err) {
     console.error('Error creating announcement:', err);

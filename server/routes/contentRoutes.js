@@ -1,5 +1,6 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
+const ensureProfileComplete = require('../middleware/profileComplete');
 const {
   listSemesters,
   getSemester,
@@ -17,8 +18,8 @@ router.get('/semesters', listSemesters);
 router.get('/about', getAbout);
 
 // Subjects, materials metadata, and Drive links require a logged-in account
-router.get('/semesters/:idOrNumber', protect, getSemester);
-router.get('/subjects/:subjectId', protect, getSubject);
-router.get('/resources/:resourceId/access', protect, accessResource);
+router.get('/semesters/:idOrNumber', protect, ensureProfileComplete, getSemester);
+router.get('/subjects/:subjectId', protect, ensureProfileComplete, getSubject);
+router.get('/resources/:resourceId/access', protect, ensureProfileComplete, accessResource);
 
 module.exports = router;

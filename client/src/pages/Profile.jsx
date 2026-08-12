@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 /**
- * User profile page — Edit Name, Bio, Profile Picture + Change Password.
+ * User profile page — Edit Name, Roll Number, Bio, Profile Photo + Change Password.
  */
 function Profile() {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, updateProfile: updateAuthProfile, logout } = useAuth();
 
   const [profile, setProfile] = useState({
     name: authUser?.name || '',
     email: authUser?.email || '',
-    bio: '',
-    avatarUrl: '',
+    rollNumber: authUser?.rollNumber || '',
+    bio: authUser?.bio || '',
+    avatarUrl: authUser?.avatarUrl || '',
     createdAt: authUser?.createdAt || null,
   });
 
+  const [file, setFile] = useState(null);
   const [profileMessage, setProfileMessage] = useState('');
   const [profileError, setProfileError] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
@@ -39,6 +40,7 @@ function Profile() {
           setProfile({
             name: data.user.name || '',
             email: data.user.email || '',
+            rollNumber: data.user.rollNumber || '',
             bio: data.user.bio || '',
             avatarUrl: data.user.avatarUrl || '',
             createdAt: data.user.createdAt,
@@ -66,48 +68,65 @@ function Profile() {
 
   const initial = (profile.name || '?').charAt(0).toUpperCase();
 
-  // Handle local image file upload & conversion to Base64
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleImageSelect = (e) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
 
-    if (!file.type.startsWith('image/')) {
+    if (!selected.type.startsWith('image/')) {
       setProfileError('Please upload a valid image file (PNG, JPG, WebP).');
       return;
     }
 
-    if (file.size > 1.5 * 1024 * 1024) {
-      setProfileError('Image size must be less than 1.5 MB.');
+    if (selected.size > 5 * 1024 * 1024) {
+      setProfileError('Image size must be less than 5 MB.');
       return;
     }
 
     setProfileError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProfile((prev) => ({ ...prev, avatarUrl: reader.result }));
-    };
-    reader.readAsDataURL(file);
+    setFile(selected);
+
+    const objectUrl = URL.createObjectURL(selected);
+    setProfile((prev) => ({ ...prev, avatarUrl: objectUrl }));
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setProfileMessage('');
     setProfileError('');
+
+    if (!profile.name.trim()) {
+      setProfileError('Name is mandatory and cannot be empty.');
+      return;
+    }
+    if (!profile.rollNumber.trim()) {
+      setProfileError('Roll Number is mandatory and cannot be empty.');
+      return;
+    }
+
+
     setProfileLoading(true);
 
     try {
-      const data = await api.updateProfile({
-        name: profile.name,
-        bio: profile.bio,
-        avatarUrl: profile.avatarUrl,
-      });
-      setProfileMessage(data.message || 'Profile updated successfully!');
-      if (data.user) {
+      const formData = new FormData();
+      formData.append('name', profile.name.trim());
+      formData.append('rollNumber', profile.rollNumber.trim());
+      formData.append('bio', profile.bio.trim());
+
+      if (file) {
+        formData.append('avatar', file);
+      } else if (profile.avatarUrl) {
+        formData.append('avatarUrl', profile.avatarUrl);
+      }
+
+      const updatedUser = await updateAuthProfile(formData);
+      setProfileMessage('Profile updated successfully!');
+      if (updatedUser) {
         setProfile((prev) => ({
           ...prev,
-          name: data.user.name,
-          bio: data.user.bio,
-          avatarUrl: data.user.avatarUrl,
+          name: updatedUser.name,
+          rollNumber: updatedUser.rollNumber,
+          bio: updatedUser.bio || '',
+          avatarUrl: updatedUser.avatarUrl,
         }));
       }
     } catch (err) {
@@ -150,8 +169,8 @@ function Profile() {
             <div
               className="avatar"
               style={{
-                width: '90px',
-                height: '90px',
+                width: '96px',
+                height: '96px',
                 margin: '0 auto 1rem auto',
                 borderRadius: '50%',
                 overflow: 'hidden',
@@ -159,10 +178,11 @@ function Profile() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2rem',
+                fontSize: '2.25rem',
                 fontWeight: 700,
                 color: 'var(--color-brand)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                border: '3px solid #0f766e',
               }}
             >
               {profile.avatarUrl ? (
@@ -173,6 +193,9 @@ function Profile() {
             </div>
 
             <h1 style={{ fontSize: '1.75rem', margin: '0 0 0.25rem' }}>{profile.name}</h1>
+            <p className="muted" style={{ margin: '0 0 0.25rem', fontWeight: '600' }}>
+              Roll Number: <span style={{ color: '#0f766e' }}>{profile.rollNumber || 'Not set'}</span>
+            </p>
             <p className="muted" style={{ margin: '0 0 0.5rem' }}>{profile.email}</p>
             <p className="muted" style={{ fontSize: '0.85rem' }}>Member since {joined}</p>
           </div>
@@ -182,32 +205,30 @@ function Profile() {
 
           <form onSubmit={handleUpdateProfile}>
             <div className="form-group">
-              <label>Profile Picture</label>
+              <label style={{ fontWeight: '600' }}>Profile Photo <span className="muted" style={{ fontWeight: 'normal' }}>(Optional)</span></label>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <label
+                  htmlFor="profile-file-input"
+                  className="btn btn-secondary"
+                  style={{ cursor: 'pointer', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
+                >
+                  Change Photo
+                </label>
                 <input
+                  id="profile-file-input"
                   type="file"
                   accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ fontSize: '0.88rem' }}
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
                 />
-                {profile.avatarUrl && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-                    onClick={() => setProfile((p) => ({ ...p, avatarUrl: '' }))}
-                  >
-                    Remove Photo
-                  </button>
-                )}
               </div>
               <small className="muted" style={{ display: 'block', marginTop: '0.25rem' }}>
-                Upload a photo (PNG, JPG, WebP up to 1.5MB).
+                Upload a photo (PNG, JPG, WebP up to 5MB).
               </small>
             </div>
 
             <div className="form-group">
-              <label htmlFor="profileName">Full Name</label>
+              <label htmlFor="profileName" style={{ fontWeight: '600' }}>Full Name <span style={{ color: '#ef4444' }}>*</span></label>
               <input
                 id="profileName"
                 type="text"
@@ -219,7 +240,21 @@ function Profile() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="profileBio">Bio / About Me</label>
+              <label htmlFor="profileRoll" style={{ fontWeight: '600' }}>Roll Number <span style={{ color: '#ef4444' }}>*</span></label>
+              <input
+                id="profileRoll"
+                type="text"
+                required
+                value={profile.rollNumber}
+                onChange={(e) => setProfile((p) => ({ ...p, rollNumber: e.target.value }))}
+              />
+              <small className="muted" style={{ fontSize: '12px', marginTop: '2px', display: 'block' }}>
+                Roll numbers must be unique across all students.
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profileBio" style={{ fontWeight: '600' }}>Bio / About Me</label>
               <textarea
                 id="profileBio"
                 rows={3}

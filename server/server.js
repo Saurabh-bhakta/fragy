@@ -72,6 +72,9 @@ async function start() {
   app.use(express.json({ limit: '5mb' }));
   app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+  // Static uploads directory for user profile avatars
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({ ok: true, service: 'Fragy API' });

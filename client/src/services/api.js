@@ -19,7 +19,10 @@ export function setToken(token) {
 }
 
 async function request(path, { method = 'GET', body, auth = false } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {};
+  if (!(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (auth) {
     const token = getToken();
@@ -29,7 +32,7 @@ async function request(path, { method = 'GET', body, auth = false } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
   });
 
   let data = null;
@@ -54,7 +57,6 @@ export const api = {
   health: () => request('/health'),
   register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
-  googleAuth: (payload) => request('/auth/google', { method: 'POST', body: payload }),
   me: () => request('/auth/me', { auth: true }),
   changePassword: (payload) =>
     request('/auth/change-password', { method: 'POST', body: payload, auth: true }),

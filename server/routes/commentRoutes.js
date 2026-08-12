@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 const { protect } = require('../middleware/auth');
+const ensureProfileComplete = require('../middleware/profileComplete');
 const { listComments, createComment, updateComment } = require('../controllers/commentController');
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get('/', listComments);
 router.post(
   '/',
   protect,
+  ensureProfileComplete,
   commentLimiter,
   [
     body('message')
@@ -37,6 +39,7 @@ router.post(
 router.put(
   '/:id',
   protect,
+  ensureProfileComplete,
   [
     body('message')
       .trim()

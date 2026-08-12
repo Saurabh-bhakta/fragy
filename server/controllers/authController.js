@@ -1,32 +1,43 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { signToken } = require('../services/tokenService');
-const { sendWelcomeEmail } = useSafeEmail();
 
 function useSafeEmail() {
-  // Lazy require keeps controllers easy to read
   return require('../services/emailService');
 }
 
-/** POST /api/auth/register */
+/** POST /api/auth/register — password registration */
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
-
-    const existing = await User.findOne({ email: email.toLowerCase().trim() });
-    if (existing) {
-      return res.status(409).json({ message: 'An account with this email already exists.' });
+    if (!email || !password || !name) {
+      return res.status(400).json({ message: 'Name, email, and password are required.' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanName = name.trim();
+    const cleanPassword = String(password);
+
+    if (cleanPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const existing = await User.findOne({ email: cleanEmail });
+    if (existing) {
+      return res.status(409).json({ message: 'An account with this email already exists. Please log in.' });
+    }
+
+    const passwordHash = await bcrypt.hash(cleanPassword, 12);
     const user = await User.create({
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
+      name: cleanName,
+      email: cleanEmail,
       passwordHash,
       role: 'user',
+      profileCompleted: false,
     });
 
-    // Welcome email is best-effort (won't fail registration)
+    const { sendWelcomeEmail } = useSafeEmail();
     sendWelcomeEmail(user).catch((err) => console.warn('Welcome email failed:', err.message));
 
     const token = signToken(user._id);
@@ -34,12 +45,14 @@ async function register(req, res) {
       message: 'Account created successfully',
       token,
       user: {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
+        rollNumber: user.rollNumber || '',
+        avatarUrl: user.avatarUrl || '',
+        profileCompleted: false,
         createdAt: user.createdAt,
-        avatarUrl: user.avatarUrl,
       },
     });
   } catch (err) {
@@ -48,32 +61,55 @@ async function register(req, res) {
   }
 }
 
-/** POST /api/auth/login */
+/** POST /api/auth/login — email & password login */
 async function login(req, res) {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required.' });
+    }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash');
+    const cleanEmail = String(email).toLowerCase().trim();
+    const cleanPassword = String(password);
+
+    const user = await User.findOne({ email: cleanEmail }).select('+passwordHash');
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) {
-      return res.status(401).json({ message: 'Invalid email or password.' });
+    // If legacy account created without passwordHash (e.g. old OTP/OAuth test accounts), automatically set passwordHash
+    if (!user.passwordHash) {
+      if (cleanPassword.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters to secure this account.' });
+      }
+      user.passwordHash = await bcrypt.hash(cleanPassword, 12);
+      await user.save();
+    } else {
+      let match = await bcrypt.compare(cleanPassword, user.passwordHash);
+      if (!match && cleanPassword.trim() !== cleanPassword) {
+        match = await bcrypt.compare(cleanPassword.trim(), user.passwordHash);
+      }
+
+      if (!match) {
+        return res.status(401).json({ message: 'Invalid email or password.' });
+      }
     }
 
+    const profileCompleted = user.role === 'admin' || Boolean(user.profileCompleted && user.name && user.avatarUrl && user.rollNumber);
     const token = signToken(user._id);
+
     return res.json({
       message: 'Logged in successfully',
       token,
       user: {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
+        rollNumber: user.rollNumber || '',
+        avatarUrl: user.avatarUrl || '',
+        profileCompleted,
         createdAt: user.createdAt,
-        avatarUrl: user.avatarUrl,
       },
     });
   } catch (err) {
@@ -87,31 +123,34 @@ async function me(req, res) {
   return res.json({ user: req.user });
 }
 
-/**
- * POST /api/auth/change-password
- * Requires current password, then stores a new bcrypt hash.
- */
+/** POST /api/auth/change-password */
 async function changePassword(req, res) {
   try {
     const { currentPassword, newPassword } = req.body;
-
     const user = await User.findById(req.user.id).select('+passwordHash');
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const match = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!match) {
-      return res.status(401).json({ message: 'Current password is incorrect.' });
+    if (user.passwordHash) {
+      let match = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!match && String(currentPassword).trim() !== String(currentPassword)) {
+        match = await bcrypt.compare(String(currentPassword).trim(), user.passwordHash);
+      }
+      if (!match) {
+        return res.status(401).json({ message: 'Current password is incorrect.' });
+      }
     }
 
     if (currentPassword === newPassword) {
-      return res.status(400).json({ message: 'New password must be different from the current password.' });
+      return res.status(400).json({ message: 'New password must be different from current password.' });
+    }
+    if (!newPassword || String(newPassword).length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters.' });
     }
 
-    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    user.passwordHash = await bcrypt.hash(String(newPassword), 12);
     await user.save();
-
     return res.json({ message: 'Password updated successfully.' });
   } catch (err) {
     console.error('changePassword error:', err);
@@ -119,80 +158,9 @@ async function changePassword(req, res) {
   }
 }
 
-/** POST /api/auth/google — authenticate or register via Google */
-async function googleAuth(req, res) {
-  try {
-    const { email, name, avatarUrl, googleId, credential } = req.body;
-
-    let userEmail = email ? String(email).toLowerCase().trim() : '';
-    let userName = name ? String(name).trim() : '';
-    let userAvatar = avatarUrl || '';
-    let userGoogleId = googleId || '';
-
-    // If a Google ID token credential was passed, decode basic info
-    if (credential && !userEmail) {
-      try {
-        const payloadBase64 = credential.split('.')[1];
-        if (payloadBase64) {
-          const decoded = JSON.parse(Buffer.from(payloadBase64, 'base64').toString('utf-8'));
-          userEmail = decoded.email?.toLowerCase().trim() || userEmail;
-          userName = decoded.name || userName;
-          userAvatar = decoded.picture || userAvatar;
-          userGoogleId = decoded.sub || userGoogleId;
-        }
-      } catch (e) {
-        console.warn('Could not parse Google credential token:', e.message);
-      }
-    }
-
-    if (!userEmail) {
-      return res.status(400).json({ message: 'Google email is required.' });
-    }
-
-    let user = await User.findOne({ email: userEmail });
-
-    if (!user) {
-      const crypto = require('crypto');
-      const randomPassword = crypto.randomBytes(16).toString('hex');
-      const passwordHash = await bcrypt.hash(randomPassword, 12);
-
-      user = await User.create({
-        name: userName || userEmail.split('@')[0],
-        email: userEmail,
-        passwordHash,
-        avatarUrl: userAvatar,
-        googleId: userGoogleId,
-        role: 'user',
-      });
-
-      sendWelcomeEmail(user).catch((err) => console.warn('Welcome email failed:', err.message));
-    } else {
-      if (userAvatar && !user.avatarUrl) {
-        user.avatarUrl = userAvatar;
-      }
-      if (userGoogleId && !user.googleId) {
-        user.googleId = userGoogleId;
-      }
-      await user.save();
-    }
-
-    const token = signToken(user._id);
-    return res.json({
-      message: 'Google authentication successful',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-        avatarUrl: user.avatarUrl,
-      },
-    });
-  } catch (err) {
-    console.error('googleAuth error:', err);
-    return res.status(500).json({ message: 'Google authentication failed. Please try again.' });
-  }
-}
-
-module.exports = { register, login, me, changePassword, googleAuth };
+module.exports = {
+  register,
+  login,
+  me,
+  changePassword,
+};

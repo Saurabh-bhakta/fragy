@@ -5,11 +5,30 @@ const AuthContext = createContext(null);
 
 /**
  * Provides authentication state to the whole app.
- * Token is stored in localStorage; user profile is loaded from /api/auth/me.
+ * Token is stored in localStorage; user profile is loaded from /api/auth/me or /api/profile/me.
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  async function reloadUser() {
+    try {
+      const data = await api.getProfile();
+      if (data?.user) {
+        setUser(data.user);
+        return data.user;
+      }
+    } catch {
+      // Fall back to /auth/me if getProfile fails
+      try {
+        const data = await api.me();
+        setUser(data.user);
+        return data.user;
+      } catch {
+        setUser(null);
+      }
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('noteshub_token');
@@ -18,14 +37,7 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    api
-      .me()
-      .then((data) => setUser(data.user))
-      .catch(() => {
-        setToken(null);
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+    reloadUser().finally(() => setLoading(false));
   }, []);
 
   async function register(form) {
@@ -42,9 +54,8 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
-  async function googleLogin(payload) {
-    const data = await api.googleAuth(payload);
-    setToken(data.token);
+  async function updateProfile(formDataOrBody) {
+    const data = await api.updateProfile(formDataOrBody);
     setUser(data.user);
     return data.user;
   }
@@ -54,14 +65,21 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  const isProfileComplete = Boolean(
+    user && (user.role === 'admin' || (user.profileCompleted && user.name && user.rollNumber))
+  );
+
   const value = {
     user,
+    setUser,
     loading,
     isAuthenticated: Boolean(user),
+    isProfileComplete,
     isAdmin: user?.role === 'admin',
     register,
     login,
-    googleLogin,
+    updateProfile,
+    reloadUser,
     logout,
   };
 

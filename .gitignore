@@ -22,4 +22,7 @@ yarn-error.log*
 # Editor
 .idea/
 .vscode/
-*.swp
+# Uploaded media files
+uploads/*
+!uploads/.gitkeep
+

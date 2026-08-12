@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: {
       type: String,
-      required: true,
+      required: false,
       select: false, // do not return hash unless explicitly requested
     },
     role: {
@@ -34,14 +34,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    bio: {
+    rollNumber: {
       type: String,
-      maxlength: 300,
-      default: '',
+      trim: true,
+      unique: true,
+      sparse: true,
+      required: false,
     },
-    googleId: {
-      type: String,
-      default: '',
+    profileCompleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: { createdAt: true, updatedAt: true } }
