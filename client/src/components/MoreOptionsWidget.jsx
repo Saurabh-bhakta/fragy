@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
- * Floating "More Options" widget positioned immediately above "Have a doubt?".
- * Gives quick access to Members, Form a Group, My Groups, and Private Chat.
+ * Redesigned Floating "More Options" widget positioned immediately above "Have a doubt?".
+ * Uses a compact floating circular button (⚡) opening a clean community navigation popover.
  */
 export function MoreOptionsWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,87 +36,101 @@ export function MoreOptionsWidget() {
       to: '/members',
       icon: '👥',
       label: 'Members',
-      desc: 'Browse student & community directory',
+      desc: 'Browse student directory',
     },
     {
       to: '/groups/create',
       icon: '➕',
       label: 'Form a Group',
-      desc: 'Create a study group or club',
+      desc: 'Create a study group',
     },
     {
       to: '/groups',
       icon: '🏢',
       label: 'My Groups',
-      desc: 'View & manage your joined groups',
+      desc: 'View & manage joined groups',
     },
     {
       to: '/chat',
       icon: '💬',
-      label: 'Private Chat',
-      desc: '1-to-1 direct messaging',
+      label: 'Direct Messaging',
+      desc: '1-to-1 student chat',
     },
   ];
 
   return (
     <div className="more-options-widget-container" ref={widgetRef}>
       {isOpen && (
-        <div className="more-options-popover" role="dialog" aria-label="Community & Group Chat Menu">
-          <div className="more-options-header">
-            <div className="more-options-title-row">
-              <span className="more-options-icon" aria-hidden="true">
-                ⚡
-              </span>
-              <div>
-                <h3>More Options</h3>
-                <p className="more-options-subtitle">Community, Groups & Messaging</p>
-              </div>
+        <div
+          role="dialog"
+          aria-label="Community & Group Chat Menu"
+          style={{
+            position: 'absolute',
+            bottom: '3.6rem',
+            right: 0,
+            width: '270px',
+            background: 'var(--color-bg-card)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            boxShadow: 'var(--shadow-lg)',
+            padding: '1rem',
+            zIndex: 200,
+            animation: 'modalRise 180ms ease'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '1.1rem', color: 'var(--color-cyan)' }}>⚡</span>
+              <strong style={{ fontSize: '0.95rem' }}>Quick Actions</strong>
             </div>
             <button
               type="button"
-              className="more-options-close-btn"
               onClick={() => setIsOpen(false)}
-              aria-label="Close menu"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--color-ink-muted)' }}
             >
               ✕
             </button>
           </div>
 
-          <div className="more-options-list">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             {menuOptions.map((opt) => (
               <Link
                 key={opt.to}
                 to={opt.to}
-                className="more-options-item"
                 onClick={() => setIsOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.7rem',
+                  padding: '0.55rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'background var(--transition)',
+                  color: 'var(--color-ink)'
+                }}
+                className="more-options-item"
               >
-                <span className="more-options-item-icon" aria-hidden="true">
-                  {opt.icon}
-                </span>
-                <div className="more-options-item-meta">
-                  <strong className="more-options-item-label">{opt.label}</strong>
-                  <span className="more-options-item-desc">{opt.desc}</span>
+                <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{opt.label}</div>
+                  <div className="muted" style={{ fontSize: '0.75rem' }}>{opt.desc}</div>
                 </div>
-                <span className="more-options-item-arrow" aria-hidden="true">
-                  →
-                </span>
+                <span className="muted" style={{ fontSize: '0.8rem' }}>→</span>
               </Link>
             ))}
           </div>
         </div>
       )}
 
+      {/* COMPACT FLOATING CIRCULAR BUTTON */}
       <button
         type="button"
-        className={`more-options-trigger-btn ${isOpen ? 'active' : ''}`}
+        className="compact-floating-btn"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-label="More Options"
+        title="More Options & Community Actions"
       >
-        <span className="more-options-btn-icon" aria-hidden="true">
-          ⚡
-        </span>
-        <span className="more-options-btn-text">More Options</span>
+        <span>⚡</span>
       </button>
     </div>
   );

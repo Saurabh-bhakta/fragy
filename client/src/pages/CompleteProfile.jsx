@@ -102,8 +102,8 @@ function CompleteProfile() {
                 width: '56px',
                 height: '56px',
                 borderRadius: '50%',
-                backgroundColor: '#ccfbf1',
-                color: '#0f766e',
+                backgroundColor: 'var(--color-brand-soft)',
+                color: 'var(--color-brand)',
                 fontSize: '24px',
                 fontWeight: 'bold',
                 marginBottom: '16px',
@@ -149,7 +149,7 @@ function CompleteProfile() {
                       height: '100px',
                       borderRadius: '50%',
                       objectFit: 'cover',
-                      border: '3px solid #0f766e',
+                      border: '3px solid var(--color-brand)',
                       boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                     }}
                   />

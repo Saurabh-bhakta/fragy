@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 /**
- * Community Groups Directory page — View, Join, and Access Groups.
+ * FRAGY Redesigned Study Groups Directory Page
  */
 function Groups() {
   const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [requestingMap, setRequestingMap] = useState({});
@@ -43,54 +44,80 @@ function Groups() {
     }
   };
 
+  const filteredGroups = groups.filter(g =>
+    (g.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (g.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="page section">
       <div className="container">
-        <div className="section-header-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
           <div>
-            <div className="section-badge">
-              <span className="badge-icon">🏢</span> Community & Study Clubs
+            <div className="section-badge" style={{ color: 'var(--color-cyan)', background: 'var(--color-cyan-soft)' }}>
+              👥 Peer Collaboration
             </div>
-            <h1>Study Groups</h1>
-            <p className="muted">Form and join student groups to collaborate on notes, projects, and subjects.</p>
+            <h1 style={{ margin: 0 }}>STUDY GROUPS</h1>
+            <p className="muted" style={{ margin: 0 }}>Connect, collaborate and learn together.</p>
           </div>
 
           <Link to="/groups/create" className="btn btn-primary btn-lg">
-            ➕ Form a New Group
+            + Create Group
           </Link>
+        </div>
+
+        {/* SEARCH GROUPS BAR */}
+        <div style={{ marginBottom: '2rem' }}>
+          <input
+            type="text"
+            placeholder="Search groups by name or topic..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: '480px',
+              padding: '0.7rem 1.1rem',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-input-bg)',
+              fontSize: '0.95rem'
+            }}
+          />
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         {loading ? (
-          <p className="muted">Loading community groups…</p>
-        ) : groups.length === 0 ? (
-          <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+          <p className="muted">Loading study groups…</p>
+        ) : filteredGroups.length === 0 ? (
+          <div className="graphic-card" style={{ padding: '3rem', textAlign: 'center' }}>
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.5rem' }}>🏢</span>
-            <h3>No study groups formed yet</h3>
-            <p className="muted">Be the first to create a group for your class or semester!</p>
+            <h3>No study groups found</h3>
+            <p className="muted">
+              {searchQuery ? `No study groups match "${searchQuery}".` : 'Be the first to create a study group for your class!'}
+            </p>
             <Link to="/groups/create" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-              Form a Group Now
+              + Create Group
             </Link>
           </div>
         ) : (
-          <div className="card-grid" style={{ marginTop: '1.5rem' }}>
-            {groups.map((g) => {
+          <div className="card-grid">
+            {filteredGroups.map((g) => {
               const initial = (g.name || '?').charAt(0).toUpperCase();
               return (
-                <div key={g.id} className="semester-card fade-up" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div key={g.id} className="group-card fade-up" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <div
                       style={{
                         width: '52px',
                         height: '52px',
-                        borderRadius: '12px',
+                        borderRadius: '14px',
                         overflow: 'hidden',
                         background: 'var(--color-brand-soft)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: 'var(--color-brand)',
                         fontSize: '1.4rem',
                         flexShrink: 0,
@@ -104,15 +131,15 @@ function Groups() {
                     </div>
 
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{g.name}</h3>
+                      <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-ink)' }}>{g.name}</h3>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem' }}>
-                        <span className="badge" style={{ fontSize: '0.75rem' }}>
+                        <span className="section-badge" style={{ fontSize: '0.72rem', margin: 0, padding: '0.15rem 0.5rem' }}>
                           👥 {g.memberCount} {g.memberCount === 1 ? 'member' : 'members'}
                         </span>
                         {g.isGroupAdmin && (
                           <span
-                            className="badge"
-                            style={{ background: 'rgba(217, 119, 6, 0.15)', color: '#d97706', fontSize: '0.75rem', fontWeight: 700 }}
+                            className="section-badge"
+                            style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '0.72rem', margin: 0, padding: '0.15rem 0.5rem' }}
                           >
                             👑 Admin
                           </span>
@@ -147,7 +174,7 @@ function Groups() {
                         disabled={requestingMap[g.id]}
                         onClick={() => handleJoinRequest(g.id)}
                       >
-                        {requestingMap[g.id] ? 'Submitting Request...' : '➕ Request to Join Group'}
+                        {requestingMap[g.id] ? 'Submitting...' : '➕ Request to Join'}
                       </button>
                     )}
                   </div>

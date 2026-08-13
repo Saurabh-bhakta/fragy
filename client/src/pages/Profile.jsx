@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 /**
- * User profile page — Edit Name, Roll Number, Bio, Profile Photo + Change Password.
+ * FRAGY Redesigned User Profile Page
  */
 function Profile() {
   const { user: authUser, updateProfile: updateAuthProfile, logout } = useAuth();
@@ -103,7 +103,6 @@ function Profile() {
       return;
     }
 
-
     setProfileLoading(true);
 
     try {
@@ -163,14 +162,13 @@ function Profile() {
     <div className="page section">
       <div className="container" style={{ display: 'grid', gap: '2rem', maxWidth: '720px' }}>
         
-        {/* Profile Card & Info */}
+        {/* PROFILE CARD & INFO */}
         <div className="form-card" style={{ width: '100%', margin: 0 }}>
           <div className="profile-header-meta" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div
-              className="avatar"
               style={{
-                width: '96px',
-                height: '96px',
+                width: '100px',
+                height: '100px',
                 margin: '0 auto 1rem auto',
                 borderRadius: '50%',
                 overflow: 'hidden',
@@ -178,11 +176,11 @@ function Profile() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2.25rem',
-                fontWeight: 700,
+                fontSize: '2.5rem',
+                fontWeight: 800,
                 color: 'var(--color-brand)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                border: '3px solid #0f766e',
+                boxShadow: 'var(--shadow-md)',
+                border: '3px solid var(--color-brand)',
               }}
             >
               {profile.avatarUrl ? (
@@ -192,12 +190,14 @@ function Profile() {
               )}
             </div>
 
-            <h1 style={{ fontSize: '1.75rem', margin: '0 0 0.25rem' }}>{profile.name}</h1>
-            <p className="muted" style={{ margin: '0 0 0.25rem', fontWeight: '600' }}>
-              Roll Number: <span style={{ color: '#0f766e' }}>{profile.rollNumber || 'Not set'}</span>
+            <h1 style={{ fontSize: '1.75rem', margin: '0 0 0.25rem', color: 'var(--color-ink)' }}>{profile.name}</h1>
+            <p className="muted" style={{ margin: '0 0 0.35rem', fontWeight: '600' }}>
+              Roll Number: <span style={{ color: 'var(--color-brand)' }}>{profile.rollNumber || 'Not set'}</span>
             </p>
-            <p className="muted" style={{ margin: '0 0 0.5rem' }}>{profile.email}</p>
-            <p className="muted" style={{ fontSize: '0.85rem' }}>Member since {joined}</p>
+            <p className="muted" style={{ margin: '0 0 0.5rem', fontSize: '0.9rem' }}>{profile.email}</p>
+            <span className="section-badge" style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem' }}>
+              Student Member · Joined {joined}
+            </span>
           </div>
 
           {profileError && <div className="alert alert-error">{profileError}</div>}
@@ -210,7 +210,7 @@ function Profile() {
                 <label
                   htmlFor="profile-file-input"
                   className="btn btn-secondary"
-                  style={{ cursor: 'pointer', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
+                  style={{ cursor: 'pointer', padding: '0.45rem 0.9rem', fontSize: '0.88rem' }}
                 >
                   Change Photo
                 </label>
@@ -222,13 +222,13 @@ function Profile() {
                   style={{ display: 'none' }}
                 />
               </div>
-              <small className="muted" style={{ display: 'block', marginTop: '0.25rem' }}>
+              <small className="muted" style={{ display: 'block', marginTop: '0.35rem', fontSize: '0.8rem' }}>
                 Upload a photo (PNG, JPG, WebP up to 5MB).
               </small>
             </div>
 
             <div className="form-group">
-              <label htmlFor="profileName" style={{ fontWeight: '600' }}>Full Name <span style={{ color: '#ef4444' }}>*</span></label>
+              <label htmlFor="profileName" style={{ fontWeight: '600' }}>Full Name <span style={{ color: 'var(--color-danger)' }}>*</span></label>
               <input
                 id="profileName"
                 type="text"
@@ -236,17 +236,33 @@ function Profile() {
                 maxLength={80}
                 value={profile.name}
                 onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="profileRoll" style={{ fontWeight: '600' }}>Roll Number <span style={{ color: '#ef4444' }}>*</span></label>
+              <label htmlFor="profileRoll" style={{ fontWeight: '600' }}>Roll Number <span style={{ color: 'var(--color-danger)' }}>*</span></label>
               <input
                 id="profileRoll"
                 type="text"
                 required
                 value={profile.rollNumber}
                 onChange={(e) => setProfile((p) => ({ ...p, rollNumber: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
               <small className="muted" style={{ fontSize: '12px', marginTop: '2px', display: 'block' }}>
                 Roll numbers must be unique across all students.
@@ -262,35 +278,42 @@ function Profile() {
                 placeholder="Share a short bio about yourself, courses, or interests..."
                 value={profile.bio}
                 onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
-                style={{ width: '100%', padding: '0.75rem' }}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
-              <small className="muted" style={{ display: 'block', textAlign: 'right' }}>
+              <small className="muted" style={{ display: 'block', textAlign: 'right', marginTop: '0.2rem' }}>
                 {profile.bio.length}/300
               </small>
             </div>
 
-            <div className="form-actions" style={{ display: 'flex', gap: '1rem' }}>
+            <div className="form-actions" style={{ display: 'flex', gap: '1rem', marginTop: '1.25rem' }}>
               <button type="submit" className="btn btn-primary" disabled={profileLoading}>
                 {profileLoading ? 'Saving...' : 'Save Profile'}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={logout}>
+              <button type="button" className="btn btn-secondary" onClick={logout} style={{ color: 'var(--color-danger)' }}>
                 Logout
               </button>
             </div>
           </form>
         </div>
 
-        {/* Change Password */}
+        {/* CHANGE PASSWORD */}
         <div className="form-card" style={{ width: '100%', margin: 0 }}>
-          <h2>Change Password</h2>
-          <p className="muted">Enter your current password, then choose a new one.</p>
+          <h2 style={{ fontSize: '1.3rem', margin: '0 0 0.2rem', color: 'var(--color-ink)' }}>Change Password</h2>
+          <p className="muted" style={{ fontSize: '0.88rem', margin: '0 0 1.25rem' }}>Enter your current password, then choose a new one.</p>
 
           {passwordError && <div className="alert alert-error">{passwordError}</div>}
           {passwordMessage && <div className="alert alert-success">{passwordMessage}</div>}
 
           <form onSubmit={handleChangePassword}>
             <div className="form-group">
-              <label htmlFor="currentPassword">Current Password</label>
+              <label htmlFor="currentPassword" style={{ fontWeight: 600 }}>Current Password</label>
               <input
                 id="currentPassword"
                 type="password"
@@ -298,10 +321,18 @@ function Profile() {
                 autoComplete="current-password"
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm((f) => ({ ...f, currentPassword: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="newPassword">New Password</label>
+              <label htmlFor="newPassword" style={{ fontWeight: 600 }}>New Password</label>
               <input
                 id="newPassword"
                 type="password"
@@ -310,10 +341,18 @@ function Profile() {
                 autoComplete="new-password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm((f) => ({ ...f, newPassword: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm New Password</label>
+              <label htmlFor="confirmPassword" style={{ fontWeight: 600 }}>Confirm New Password</label>
               <input
                 id="confirmPassword"
                 type="password"
@@ -322,9 +361,17 @@ function Profile() {
                 autoComplete="new-password"
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.9rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.92rem'
+                }}
               />
             </div>
-            <div className="form-actions">
+            <div className="form-actions" style={{ marginTop: '1.25rem' }}>
               <button type="submit" className="btn btn-primary" disabled={passwordLoading}>
                 {passwordLoading ? 'Updating...' : 'Update Password'}
               </button>

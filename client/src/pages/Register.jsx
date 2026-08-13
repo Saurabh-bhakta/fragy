@@ -133,7 +133,7 @@ function Register() {
 
           <p className="form-footer" style={{ marginTop: '24px', textAlign: 'center' }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color: '#0f766e', fontWeight: '600' }}>
+            <Link to="/login" style={{ color: 'var(--color-brand)', fontWeight: '600' }}>
               Login
             </Link>
           </p>

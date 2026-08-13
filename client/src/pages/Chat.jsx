@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 /**
- * 1-to-1 Private Chat page.
+ * FRAGY Redesigned 1-to-1 Private Chat Page
  */
 function Chat() {
   const { conversationId } = useParams();
@@ -31,7 +31,6 @@ function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Fetch list of conversations
   const fetchConversations = () => {
     setConversationsLoading(true);
     api
@@ -45,7 +44,6 @@ function Chat() {
       });
   };
 
-  // Fetch active conversation messages
   const fetchMessages = (convId) => {
     setMessagesLoading(true);
     api
@@ -65,7 +63,6 @@ function Chat() {
   useEffect(() => {
     fetchConversations();
 
-    // Socket setup
     const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     socketRef.current = io(socketUrl.replace(/\/api$/, ''));
 
@@ -152,33 +149,32 @@ function Chat() {
   };
 
   return (
-    <div className="page section" style={{ paddingBottom: '3rem' }}>
-      <div className="container" style={{ maxWidth: '1000px' }}>
-        <div className="section-header-row" style={{ marginBottom: '1.25rem' }}>
+    <div className="page section" style={{ paddingBottom: '2.5rem' }}>
+      <div className="container" style={{ maxWidth: '1080px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <div className="section-badge">
-              <span className="badge-icon">💬</span> Messaging
+            <div className="section-badge" style={{ color: 'var(--color-brand)', background: 'var(--color-brand-soft)', margin: '0 0 0.35rem' }}>
+              💬 Real-time Campus Messaging
             </div>
-            <h1 style={{ fontSize: '1.75rem', margin: 0 }}>Private Chat</h1>
+            <h1 style={{ fontSize: '1.75rem', margin: 0 }}>Direct Messages</h1>
           </div>
-          <Link to="/members" className="btn btn-secondary">
+          <Link to="/members" className="btn btn-secondary" style={{ fontSize: '0.88rem' }}>
             👥 Find Members to Chat
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 320px) 1fr', gap: '1.25rem', height: '560px', background: 'var(--color-surface)', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          
-          {/* Left Sidebar — Conversation List */}
-          <div style={{ borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)', fontWeight: 700, fontSize: '0.9rem' }}>
+        <div className="chat-container">
+          {/* LEFT SIDEBAR — CONVERSATION LIST */}
+          <div style={{ borderRight: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
+            <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--color-border)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-ink)' }}>
               Conversations ({conversations.length})
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {conversationsLoading ? (
-                <p className="muted" style={{ padding: '1rem' }}>Loading conversations…</p>
+                <p className="muted" style={{ padding: '1rem', fontSize: '0.88rem' }}>Loading conversations…</p>
               ) : conversations.length === 0 ? (
-                <div style={{ padding: '1.5rem', textAlign: 'center' }} className="muted">
+                <div style={{ padding: '1.5rem', textAlign: 'center', fontSize: '0.88rem' }} className="muted">
                   No active chats yet. Visit the <Link to="/members" style={{ color: 'var(--color-brand)' }}>Members directory</Link> to start messaging.
                 </div>
               ) : (
@@ -198,13 +194,13 @@ function Chat() {
                         cursor: 'pointer',
                         background: isActive ? 'var(--color-brand-soft)' : 'transparent',
                         borderBottom: '1px solid var(--color-border)',
-                        transition: 'background 0.2s ease',
+                        transition: 'background var(--transition)',
                       }}
                     >
                       <div
                         style={{
-                          width: '40px',
-                          height: '40px',
+                          width: '42px',
+                          height: '42px',
                           borderRadius: '50%',
                           overflow: 'hidden',
                           background: 'var(--color-brand-soft)',
@@ -239,16 +235,16 @@ function Chat() {
             </div>
           </div>
 
-          {/* Right Main Panel — Active Chat Room */}
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* RIGHT MAIN PANEL — ACTIVE CHAT ROOM */}
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--color-bg-card)' }}>
             {conversationId ? (
               <>
-                {/* Active Chat Header */}
-                <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {/* ACTIVE CHAT HEADER */}
+                <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div
                     style={{
-                      width: '36px',
-                      height: '36px',
+                      width: '38px',
+                      height: '38px',
                       borderRadius: '50%',
                       overflow: 'hidden',
                       background: 'var(--color-brand-soft)',
@@ -266,14 +262,14 @@ function Chat() {
                     )}
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '1rem', margin: 0 }}>{activeRecipient?.name || 'Private Chat'}</h3>
+                    <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--color-ink)' }}>{activeRecipient?.name || 'Private Chat'}</h3>
                     {activeRecipient?.bio && (
                       <span className="muted" style={{ fontSize: '0.78rem' }}>{activeRecipient.bio}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Messages Body */}
+                {/* MESSAGES BODY */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {messagesLoading ? (
                     <p className="muted">Loading chat history…</p>
@@ -302,13 +298,18 @@ function Chat() {
                                   type="text"
                                   value={editContent}
                                   onChange={(e) => setEditContent(e.target.value)}
-                                  className="doubt-input"
-                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.88rem' }}
+                                  style={{
+                                    padding: '0.4rem 0.75rem',
+                                    fontSize: '0.88rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    border: '1px solid var(--color-border)',
+                                    background: 'var(--color-input-bg)'
+                                  }}
                                 />
-                                <button className="btn btn-primary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleSaveEdit(m.id)}>
+                                <button className="btn btn-primary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleSaveEdit(m.id)}>
                                   Save
                                 </button>
-                                <button className="btn btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }} onClick={() => setEditingMessageId(null)}>
+                                <button className="btn btn-secondary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }} onClick={() => setEditingMessageId(null)}>
                                   Cancel
                                 </button>
                               </div>
@@ -317,12 +318,12 @@ function Chat() {
                                 style={{
                                   padding: '0.75rem 1rem',
                                   borderRadius: isSelf ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                                  background: isSelf ? 'var(--color-brand)' : 'var(--color-bg)',
+                                  background: isSelf ? 'linear-gradient(135deg, var(--color-brand) 0%, #7c3aed 100%)' : 'var(--color-bg)',
                                   color: isSelf ? '#ffffff' : 'var(--color-ink)',
                                   border: isSelf ? 'none' : '1px solid var(--color-border)',
                                   fontSize: '0.92rem',
                                   lineHeight: 1.5,
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                  boxShadow: 'var(--shadow-sm)',
                                 }}
                               >
                                 <span>{m.content}</span>
@@ -356,10 +357,10 @@ function Chat() {
                                         right: isSelf ? 0 : 'auto',
                                         left: isSelf ? 'auto' : 0,
                                         bottom: '1.4rem',
-                                        background: 'var(--color-surface)',
+                                        background: 'var(--color-bg-card)',
                                         border: '1px solid var(--color-border)',
                                         borderRadius: 'var(--radius-sm)',
-                                        boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+                                        boxShadow: 'var(--shadow-lg)',
                                         zIndex: 10,
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -383,7 +384,7 @@ function Chat() {
                                       {m.canDelete && (
                                         <button
                                           type="button"
-                                          style={{ padding: '0.5rem 0.75rem', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.82rem', color: '#ef4444' }}
+                                          style={{ padding: '0.5rem 0.75rem', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.82rem', color: 'var(--color-danger)' }}
                                           onClick={() => handleDeleteMessage(m.id)}
                                         >
                                           🗑️ Delete (10m)
@@ -402,30 +403,35 @@ function Chat() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Send Input Form */}
-                <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem', padding: '0.85rem 1.25rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                {/* SEND INPUT FORM */}
+                <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem', padding: '0.85rem 1.25rem', borderTop: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
                   <input
                     type="text"
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="doubt-input"
-                    style={{ flex: 1 }}
+                    style={{
+                      flex: 1,
+                      padding: '0.65rem 1rem',
+                      borderRadius: 'var(--radius-full)',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-input-bg)',
+                      fontSize: '0.92rem'
+                    }}
                   />
-                  <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.25rem' }}>
+                  <button type="submit" className="btn btn-primary" style={{ padding: '0.65rem 1.25rem' }}>
                     Send 🚀
                   </button>
                 </form>
               </>
             ) : (
-              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--color-ink-muted)' }}>
+              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--color-ink-muted)', padding: '2rem' }}>
                 <span style={{ fontSize: '3rem', display: 'block', marginBottom: '0.5rem' }}>💬</span>
                 <h3>Select a conversation to start chatting</h3>
                 <p style={{ fontSize: '0.9rem' }}>Choose from existing chats on the left or search members to message.</p>
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

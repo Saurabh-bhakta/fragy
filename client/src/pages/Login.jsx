@@ -89,7 +89,7 @@ function Login() {
 
           <p className="form-footer" style={{ marginTop: '24px', textAlign: 'center' }}>
             New to Fragy?{' '}
-            <Link to="/register" style={{ color: '#0f766e', fontWeight: '600' }}>
+            <Link to="/register" style={{ color: 'var(--color-brand)', fontWeight: '600' }}>
               Create an account
             </Link>
           </p>

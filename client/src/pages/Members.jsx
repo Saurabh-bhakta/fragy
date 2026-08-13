@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 /**
- * Members directory page — Search & view registered platform users.
+ * FRAGY Redesigned Members Directory Page
  */
 function Members() {
   const navigate = useNavigate();
@@ -53,25 +53,31 @@ function Members() {
   return (
     <div className="page section">
       <div className="container">
-        <div className="section-header-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
           <div>
-            <div className="section-badge">
-              <span className="badge-icon">👥</span> Community Directory
+            <div className="section-badge" style={{ color: 'var(--color-cyan)', background: 'var(--color-cyan-soft)' }}>
+              👤 Student Directory
             </div>
-            <h1>Registered Members</h1>
-            <p className="muted">Connect, view public profiles, and chat with fellow students.</p>
+            <h1 style={{ margin: 0 }}>Campus Members</h1>
+            <p className="muted" style={{ margin: 0 }}>Connect, view student profiles, and collaborate with your peers.</p>
           </div>
 
           <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', width: 'min(100%, 360px)' }}>
             <input
               type="text"
-              placeholder="Search members by name..."
+              placeholder="Search members by name or roll..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="doubt-input"
-              style={{ flex: 1 }}
+              style={{
+                flex: 1,
+                padding: '0.6rem 1rem',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-input-bg)',
+                fontSize: '0.9rem'
+              }}
             />
-            <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1rem' }}>
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.1rem', fontSize: '0.9rem' }}>
               Search
             </button>
           </form>
@@ -80,32 +86,33 @@ function Members() {
         {error && <div className="alert alert-error">{error}</div>}
 
         {loading ? (
-          <p className="muted">Loading community members…</p>
+          <p className="muted">Loading student directory…</p>
         ) : members.length === 0 ? (
-          <div className="empty-state" style={{ padding: '2.5rem', textAlign: 'center' }}>
-            No members found matching your search.
+          <div className="graphic-card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+            <p className="muted" style={{ margin: 0 }}>No campus members found matching "{search}".</p>
           </div>
         ) : (
-          <div className="card-grid" style={{ marginTop: '1.5rem' }}>
+          <div className="card-grid">
             {members.map((m) => {
               const initial = (m.name || '?').charAt(0).toUpperCase();
               return (
-                <div key={m.id} className="semester-card fade-up" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div key={m.id} className="graphic-card fade-up" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', marginBottom: '0.85rem' }}>
                     <div
                       style={{
-                        width: '48px',
-                        height: '48px',
+                        width: '52px',
+                        height: '52px',
                         borderRadius: '50%',
                         overflow: 'hidden',
                         background: 'var(--color-brand-soft)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: 'var(--color-brand)',
-                        fontSize: '1.2rem',
+                        fontSize: '1.25rem',
                         flexShrink: 0,
+                        border: '2px solid var(--color-border)'
                       }}
                     >
                       {m.avatarUrl ? (
@@ -114,27 +121,26 @@ function Members() {
                         initial
                       )}
                     </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', margin: 0 }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--color-ink)' }}>
                         {m.name} {m.isSelf && <small className="muted">(You)</small>}
                       </h3>
+                      {m.rollNumber && (
+                        <div className="muted" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-brand)' }}>
+                          Roll: {m.rollNumber}
+                        </div>
+                      )}
                       <span className="muted" style={{ fontSize: '0.78rem' }}>
-                        Joined {new Date(m.createdAt).toLocaleDateString()}
+                        Member since {new Date(m.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
-                  {m.bio ? (
-                    <p className="muted" style={{ fontSize: '0.88rem', lineClamp: 2, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
-                      {m.bio}
-                    </p>
-                  ) : (
-                    <p className="muted" style={{ fontStyle: 'italic', fontSize: '0.85rem', flex: 1 }}>
-                      No bio added yet.
-                    </p>
-                  )}
+                  <p className="muted" style={{ fontSize: '0.86rem', flex: 1, marginBottom: '1rem', lineHeight: '1.5' }}>
+                    {m.bio || 'Student at Fragy Digital Campus.'}
+                  </p>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', borderTop: '1px solid var(--color-border)', paddingTop: '0.85rem' }}>
                     <Link to={`/profile/${m.id}`} className="btn btn-secondary" style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}>
                       View Profile
                     </Link>
@@ -155,9 +161,9 @@ function Members() {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* PAGINATION */}
         {pagination.pages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2.5rem' }}>
             <button
               className="btn btn-secondary"
               disabled={pagination.page <= 1}
@@ -165,7 +171,7 @@ function Members() {
             >
               ← Previous
             </button>
-            <span style={{ display: 'flex', alignItems: 'center', padding: '0 0.75rem', fontWeight: 600 }}>
+            <span style={{ display: 'flex', alignItems: 'center', padding: '0 0.75rem', fontWeight: 600, fontSize: '0.9rem' }}>
               Page {pagination.page} of {pagination.pages}
             </span>
             <button

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 
 /**
- * Floating "Have a doubt?" widget at bottom-right corner.
- * Allows students to quickly ask their doubts using ChatGPT, Gemini, or Claude.
+ * Redesigned Floating "Have a doubt?" widget at bottom-right corner.
+ * Compact default state (💬), expands gracefully on hover, opens AI model selector.
  */
 export function DoubtWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +10,6 @@ export function DoubtWidget() {
   const [copiedMsg, setCopiedMsg] = useState('');
   const widgetRef = useRef(null);
 
-  // Close widget when clicking outside or pressing Escape
   useEffect(() => {
     function handleClickOutside(event) {
       if (widgetRef.current && !widgetRef.current.contains(event.target)) {
@@ -40,9 +39,8 @@ export function DoubtWidget() {
       provider: 'OpenAI',
       icon: '🤖',
       color: '#10a37f',
-      bgLight: '#e6f7f2',
       getUrl: (q) => (q ? `https://chatgpt.com/?q=${encodeURIComponent(q)}` : 'https://chatgpt.com'),
-      desc: 'Great for step-by-step math, concepts & code',
+      desc: 'Great for step-by-step concepts, code & math',
     },
     {
       id: 'gemini',
@@ -50,9 +48,8 @@ export function DoubtWidget() {
       provider: 'Google',
       icon: '✨',
       color: '#1a73e8',
-      bgLight: '#e8f0fe',
       getUrl: (q) => `https://gemini.google.com/app`,
-      desc: 'Fast responses, multimodal & study assistance',
+      desc: 'Fast multimodal study assistance & explanations',
     },
     {
       id: 'claude',
@@ -60,65 +57,76 @@ export function DoubtWidget() {
       provider: 'Anthropic',
       icon: '🧠',
       color: '#d97706',
-      bgLight: '#fef3c7',
       getUrl: (q) => `https://claude.ai`,
       desc: 'Deep analytical explanations & clear writing',
     },
   ];
 
-  const handleAiRedirect = (ai) => {
-    if (query.trim()) {
-      navigator.clipboard?.writeText(query.trim()).catch(() => {});
-      setCopiedMsg(`Query copied! Opening ${ai.name}...`);
-      setTimeout(() => setCopiedMsg(''), 3000);
-    }
-    const url = ai.getUrl(query.trim());
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <div className="doubt-widget-container" ref={widgetRef}>
       {/* Popover Card */}
       {isOpen && (
-        <div className="doubt-popover" role="dialog" aria-label="Have a doubt AI assistance">
-          <div className="doubt-header">
-            <div className="doubt-title-row">
-              <span className="doubt-badge-icon" aria-hidden="true">
-                💡
-              </span>
+        <div className="doubt-popover" role="dialog" aria-label="Have a doubt AI assistance" style={{
+          position: 'absolute',
+          bottom: '3.8rem',
+          right: 0,
+          width: '320px',
+          background: 'var(--color-bg-card)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius)',
+          boxShadow: 'var(--shadow-lg)',
+          padding: '1.25rem',
+          zIndex: 200,
+          animation: 'modalRise 180ms ease'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>💡</span>
               <div>
-                <h3>Have a doubt?</h3>
-                <p className="doubt-subtitle">Ask popular AI assistants for instant help</p>
+                <h3 style={{ fontSize: '1rem', margin: 0 }}>Have a doubt?</h3>
+                <span className="muted" style={{ fontSize: '0.78rem' }}>Instant AI study assistance</span>
               </div>
             </div>
             <button
               type="button"
-              className="doubt-close-btn"
               onClick={() => setIsOpen(false)}
-              aria-label="Close doubt widget"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--color-ink-muted)' }}
             >
               ✕
             </button>
           </div>
 
-          <div className="doubt-body">
-            <div className="doubt-input-group">
-              <label htmlFor="doubt-query-input">Your Question (optional)</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div>
+              <label htmlFor="doubt-input" className="muted" style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.35rem' }}>
+                Your Question (optional)
+              </label>
               <input
-                id="doubt-query-input"
+                id="doubt-input"
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Explain Boolean algebra logic gates..."
-                className="doubt-input"
+                placeholder="e.g. Explain binary search trees..."
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.8rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-input-bg)',
+                  fontSize: '0.88rem'
+                }}
               />
             </div>
 
-            {copiedMsg && <div className="doubt-copied-toast">{copiedMsg}</div>}
+            {copiedMsg && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-green)', background: 'var(--color-green-soft)', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)' }}>
+                {copiedMsg}
+              </div>
+            )}
 
-            <p className="doubt-select-label">Select an AI to open & ask:</p>
+            <span className="muted" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Select AI Model:</span>
 
-            <div className="doubt-ai-list">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {aiOptions.map((ai) => {
                 const url = ai.getUrl(query.trim());
                 return (
@@ -127,29 +135,30 @@ export function DoubtWidget() {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="doubt-ai-btn"
                     onClick={() => {
                       if (query.trim() && navigator.clipboard) {
                         navigator.clipboard.writeText(query.trim()).catch(() => {});
-                        setCopiedMsg(`Query copied! Redirecting to ${ai.name}...`);
-                        setTimeout(() => setCopiedMsg(''), 3000);
+                        setCopiedMsg(`Query copied! Opening ${ai.name}...`);
+                        setTimeout(() => setCopiedMsg(''), 2500);
                       }
                     }}
-                    style={{ '--ai-color': ai.color, '--ai-bg': ai.bgLight, textDecoration: 'none' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
+                      transition: 'all var(--transition)'
+                    }}
                   >
-                    <span className="doubt-ai-icon" aria-hidden="true">
-                      {ai.icon}
-                    </span>
-                    <div className="doubt-ai-meta">
-                      <div className="doubt-ai-name-row">
-                        <strong className="doubt-ai-name">{ai.name}</strong>
-                        <span className="doubt-ai-provider">{ai.provider}</span>
-                      </div>
-                      <span className="doubt-ai-desc">{ai.desc}</span>
+                    <span style={{ fontSize: '1.3rem' }}>{ai.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--color-ink)' }}>{ai.name}</div>
+                      <div className="muted" style={{ fontSize: '0.76rem' }}>{ai.desc}</div>
                     </div>
-                    <span className="doubt-ai-arrow" aria-hidden="true">
-                      ↗
-                    </span>
+                    <span className="muted" style={{ fontSize: '0.85rem' }}>↗</span>
                   </a>
                 );
               })}
@@ -158,19 +167,31 @@ export function DoubtWidget() {
         </div>
       )}
 
-      {/* Floating Trigger Button */}
+      {/* COMPACT FLOATING BUTTON (DEFAULT 💬, EXPANDS ON HOVER) */}
       <button
         type="button"
         className={`doubt-trigger-btn ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-label="Have a doubt? Ask AI"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.65rem 1.1rem',
+          borderRadius: 'var(--radius-full)',
+          background: 'linear-gradient(135deg, var(--color-brand) 0%, #7c3aed 100%)',
+          color: '#ffffff',
+          border: '1px solid rgba(255,255,255,0.2)',
+          fontWeight: 700,
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          boxShadow: '0 6px 24px rgba(99, 102, 241, 0.4)',
+          transition: 'all 250ms ease'
+        }}
       >
-        <span className="doubt-btn-icon" aria-hidden="true">
-          💬
-        </span>
-        <span className="doubt-btn-text">Have a doubt?</span>
-        <span className="doubt-pulse-dot" aria-hidden="true"></span>
+        <span style={{ fontSize: '1.15rem' }}>💬</span>
+        <span>Have a doubt?</span>
       </button>
     </div>
   );
